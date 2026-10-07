@@ -7,7 +7,7 @@ SUNO_API_KEY = os.getenv("SUNO_API_KEY")
 SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
-async def async def add_instrumental(
+async def add_instrumental(
     upload_url: str,
     title: str = "My Song",
     tags: str = (
