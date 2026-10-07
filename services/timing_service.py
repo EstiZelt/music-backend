@@ -191,10 +191,3 @@ async def create_timing_test_mix(
         "sample_rate": sr,
         "timing_shift_seconds": timing_shift_seconds,
     }
-
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
