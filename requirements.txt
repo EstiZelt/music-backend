@@ -8,3 +8,4 @@ pretty_midi
 mido
 midi2audio
 pydub
+httpx
