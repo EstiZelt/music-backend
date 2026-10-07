@@ -3,7 +3,6 @@ import httpx
 
 
 SUNO_API_KEY = os.getenv("SUNO_API_KEY")
-
 SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
@@ -12,21 +11,31 @@ async def add_instrumental(
     title: str = "My Song",
     tags: str = (
         "professional studio accompaniment, "
-        "supportive arrangement, "
+        "supportive clean arrangement, "
         "piano, warm strings, subtle drums, "
-        "follow the exact original vocal melody, rhythm and phrasing, "
-        "keep the lead vocal clearly dominant, "
-        "instruments should support the vocal without competing with it, "
-        "clean restrained arrangement"
+        "follow the original melody, rhythm and phrasing accurately, "
+        "leave musical space for the lead vocal, "
+        "use the complete uploaded melody from beginning to end, "
+        "preserve every musical phrase, "
+        "do not omit or shorten any phrase, "
+        "do not end the arrangement before the original melody is complete, "
+        "follow the full structure of the uploaded audio"
     ),
     negative_tags: str = (
-        "backing vocals, background vocals, vocal harmonies, choir, "
+        "lead melody doubling, "
+        "instrumental melody copying the vocal, "
+        "busy countermelody, "
+        "dense orchestration, "
+        "solo instruments competing with the vocal, "
+        "choir, backing vocals, background vocals, vocal harmonies, "
         "second voice, doubled vocals, layered vocals, "
         "call and response, vocal ad-libs, "
-        "countermelody vocals, "
-        "instruments doubling the lead melody, "
-        "busy arrangement, orchestral overload, "
-        "heavy drums, heavy metal, distorted vocals"
+        "heavy drums, heavy metal, distorted vocals, "
+        "truncated ending, "
+        "early ending, "
+        "omitted phrases, "
+        "shortened structure, "
+        "missing melody sections"
     ),
 ):
     if not SUNO_API_KEY:
@@ -45,21 +54,22 @@ async def add_instrumental(
         "tags": tags,
         "negativeTags": negative_tags,
 
-        # זמני בשלב ה-POC
+        # זמני בשלב ה-POC.
+        # בהמשך נחליף ל-callback endpoint אמיתי אצלנו.
         "callBackUrl": "https://example.com/callback",
 
         "model": "V6",
 
-        # מקסימום נאמנות לאודיו המקורי
+        # שומרים על הנאמנות הגבוהה למקור
         "audioWeight": 1.0,
 
-        # פחות כוח לסגנון כדי שהעיבוד לא ישתלט על השירה
+        # בניסוי הקודם 0.5 נתן תוצאה מדויקת ומסודרת יותר
         "styleWeight": 0.5,
 
-        # לא רוצים כרגע יצירתיות מוזרה
+        # כרגע לא מוסיפים יצירתיות חריגה
         "weirdnessConstraint": 0.0,
 
-        # משאירים כרגע כפי שכבר הוכח שעובד
+        # כרגע משאירים קבוע כדי לא לשנות כמה משתנים יחד
         "variety": 0,
     }
 
@@ -71,22 +81,8 @@ async def add_instrumental(
         )
 
     response.raise_for_status()
-
     return response.json()
 
-
-
-
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(
-            url,
-            headers=headers,
-            json=payload,
-        )
-
-    response.raise_for_status()
-
-    return response.json()
 
 async def get_generation_details(task_id: str):
     if not SUNO_API_KEY:
@@ -110,5 +106,4 @@ async def get_generation_details(task_id: str):
         )
 
     response.raise_for_status()
-
     return response.json()
