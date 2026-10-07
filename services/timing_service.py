@@ -7,7 +7,7 @@ import numpy as np
 import soundfile as sf
 
 from fastapi.responses import FileResponse
-from services.timing_service import create_timing_test_mix
+
 
 async def _download_audio(url: str):
     async with httpx.AsyncClient(
