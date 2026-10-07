@@ -1,8 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-
-from services.suno_service import add_instrumental
+from services.suno_service import add_instrumental, get_generation_details
 
 
 app = FastAPI(
