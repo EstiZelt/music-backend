@@ -1,7 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from services.suno_service import add_instrumental, get_generation_details
+
+from services.suno_service import (
+    add_instrumental,
+    get_generation_details,
+)
 
 
 app = FastAPI(
@@ -21,8 +25,6 @@ app.add_middleware(
 class InstrumentalRequest(BaseModel):
     upload_url: str
     title: str = "POC Song"
-    tags: str = "professional studio arrangement, piano, strings, soft drums"
-    negative_tags: str = "heavy metal, distorted vocals"
 
 
 @app.get("/")
@@ -39,21 +41,19 @@ async def create_instrumental(request: InstrumentalRequest):
         result = await add_instrumental(
             upload_url=request.upload_url,
             title=request.title,
-            tags=request.tags,
-            negative_tags=request.negative_tags,
         )
 
         return {
             "success": True,
             "data": result
         }
-        
 
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=str(e)
         )
+
 
 @app.get("/song-status/{task_id}")
 async def song_status(task_id: str):
