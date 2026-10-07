@@ -6,7 +6,6 @@ import librosa
 import numpy as np
 import soundfile as sf
 
-from fastapi.responses import FileResponse
 
 
 async def _download_audio(url: str):
