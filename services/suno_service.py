@@ -54,3 +54,28 @@ async def add_instrumental(
     response.raise_for_status()
 
     return response.json()
+
+async def get_generation_details(task_id: str):
+    if not SUNO_API_KEY:
+        raise RuntimeError("SUNO_API_KEY is not configured")
+
+    url = f"{SUNO_BASE_URL}/api/v1/generate/record-info"
+
+    headers = {
+        "Authorization": f"Bearer {SUNO_API_KEY}",
+    }
+
+    params = {
+        "taskId": task_id
+    }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.get(
+            url,
+            headers=headers,
+            params=params,
+        )
+
+    response.raise_for_status()
+
+    return response.json()
