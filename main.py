@@ -47,6 +47,23 @@ async def create_instrumental(request: InstrumentalRequest):
             "success": True,
             "data": result
         }
+        
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+@app.get("/song-status/{task_id}")
+async def song_status(task_id: str):
+    try:
+        result = await get_generation_details(task_id)
+
+        return {
+            "success": True,
+            "data": result
+        }
 
     except Exception as e:
         raise HTTPException(
