@@ -192,19 +192,6 @@ async def create_timing_test_mix(
         "timing_shift_seconds": timing_shift_seconds,
     }
 
-@app.post("/test-timing-mix")
-async def test_timing_mix(request: AlignmentRequest):
-    try:
-        result = await create_timing_test_mix(
-            vocal_url=request.vocal_url,
-            instrumental_url=request.instrumental_url,
-        )
-
-        return FileResponse(
-            path=result["file_path"],
-            media_type="audio/wav",
-            filename="timing_test_mix.wav",
-        )
 
     except Exception as e:
         raise HTTPException(
