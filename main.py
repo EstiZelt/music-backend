@@ -27,7 +27,10 @@ app.add_middleware(
 class InstrumentalRequest(BaseModel):
     upload_url: str
     title: str = "POC Song"
-
+    
+class AlignmentRequest(BaseModel):
+    vocal_url: str
+    instrumental_url: str
 
 @app.get("/")
 def health():
