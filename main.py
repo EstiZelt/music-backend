@@ -75,3 +75,22 @@ async def song_status(task_id: str):
             status_code=500,
             detail=str(e)
         )
+
+@app.post("/analyze-alignment")
+async def alignment_analysis(request: AlignmentRequest):
+    try:
+        result = await analyze_alignment(
+            vocal_url=request.vocal_url,
+            instrumental_url=request.instrumental_url,
+        )
+
+        return {
+            "success": True,
+            "data": result
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
