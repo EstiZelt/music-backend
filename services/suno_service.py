@@ -7,11 +7,27 @@ SUNO_API_KEY = os.getenv("SUNO_API_KEY")
 SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
-async def add_instrumental(
+async def async def add_instrumental(
     upload_url: str,
     title: str = "My Song",
-    tags: str = "professional studio arrangement, piano, strings, soft drums",
-    negative_tags: str = "heavy metal, distorted vocals",
+    tags: str = (
+        "professional studio accompaniment, "
+        "supportive arrangement, "
+        "piano, warm strings, subtle drums, "
+        "follow the exact original vocal melody, rhythm and phrasing, "
+        "keep the lead vocal clearly dominant, "
+        "instruments should support the vocal without competing with it, "
+        "clean restrained arrangement"
+    ),
+    negative_tags: str = (
+        "backing vocals, background vocals, vocal harmonies, choir, "
+        "second voice, doubled vocals, layered vocals, "
+        "call and response, vocal ad-libs, "
+        "countermelody vocals, "
+        "instruments doubling the lead melody, "
+        "busy arrangement, orchestral overload, "
+        "heavy drums, heavy metal, distorted vocals"
+    ),
 ):
     if not SUNO_API_KEY:
         raise RuntimeError("SUNO_API_KEY is not configured")
@@ -29,20 +45,37 @@ async def add_instrumental(
         "tags": tags,
         "negativeTags": negative_tags,
 
-        # בשלב ה-POC נשתמש בכתובת זמנית.
-        # בהמשך ניצור endpoint אמיתי אצלנו.
+        # זמני בשלב ה-POC
         "callBackUrl": "https://example.com/callback",
 
         "model": "V6",
 
-        # אנחנו רוצים שהעיבוד ייצמד ככל האפשר לשירה
+        # מקסימום נאמנות לאודיו המקורי
         "audioWeight": 1.0,
 
-        # פחות חופש יצירתי בניסוי הראשון
-        "styleWeight": 0.7,
+        # פחות כוח לסגנון כדי שהעיבוד לא ישתלט על השירה
+        "styleWeight": 0.5,
+
+        # לא רוצים כרגע יצירתיות מוזרה
         "weirdnessConstraint": 0.0,
+
+        # משאירים כרגע כפי שכבר הוכח שעובד
         "variety": 0,
     }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            url,
+            headers=headers,
+            json=payload,
+        )
+
+    response.raise_for_status()
+
+    return response.json()
+
+
+
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
