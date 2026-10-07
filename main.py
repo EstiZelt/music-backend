@@ -7,6 +7,8 @@ from services.suno_service import (
     get_generation_details,
 )
 
+from services.alignment_service import analyze_alignment
+
 
 app = FastAPI(
     title="Music Backend",
