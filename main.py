@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from services.suno_service import (
@@ -8,6 +9,7 @@ from services.suno_service import (
 )
 
 from services.alignment_service import analyze_alignment
+from services.timing_service import create_timing_test_mix
 
 
 app = FastAPI(
@@ -27,10 +29,12 @@ app.add_middleware(
 class InstrumentalRequest(BaseModel):
     upload_url: str
     title: str = "POC Song"
-    
+
+
 class AlignmentRequest(BaseModel):
     vocal_url: str
     instrumental_url: str
+
 
 @app.get("/")
 def health():
@@ -76,6 +80,7 @@ async def song_status(task_id: str):
             detail=str(e)
         )
 
+
 @app.post("/analyze-alignment")
 async def alignment_analysis(request: AlignmentRequest):
     try:
@@ -88,6 +93,27 @@ async def alignment_analysis(request: AlignmentRequest):
             "success": True,
             "data": result
         }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+@app.post("/test-timing-mix")
+async def test_timing_mix(request: AlignmentRequest):
+    try:
+        result = await create_timing_test_mix(
+            vocal_url=request.vocal_url,
+            instrumental_url=request.instrumental_url,
+        )
+
+        return FileResponse(
+            path=result["file_path"],
+            media_type="audio/wav",
+            filename="timing_test_mix.wav",
+        )
 
     except Exception as e:
         raise HTTPException(
