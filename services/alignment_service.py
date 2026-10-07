@@ -142,10 +142,7 @@ def _calculate_local_alignment(
 
     # Instead of returning thousands of DTW points,
     # sample approximately one diagnostic point every 2 seconds.
-    vocal_duration = librosa.get_duration(
-        y=vocal,
-        sr=vocal_sr,
-    )
+      vocal_duration = float(vocal_times[-1])
 
     sample_times = np.arange(
         0.0,
