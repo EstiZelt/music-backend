@@ -33,17 +33,14 @@ async def add_instrumental(
 
 negative_tags: str = (
     "voice replacement, new singer, synthetic vocals, "
-    "changed vocal identity, altered vocal timbre, "
-    "re-sung vocals, vocal regeneration, "
+    "altered vocal timbre, re-sung vocals, "
     "heavy autotune, robotic pitch correction, "
-    "unnatural pitch transitions, excessive vocal processing, "
     "backing vocals, choir, vocal harmonies, "
-    "doubled vocals, layered vocals, vocal ad-libs, "
-    "changed melody, changed phrasing, missing vocal phrases, "
-    "instrumental melody doubling the singer, "
-    "competing instrumental solos, overpowering instruments, "
-    "harsh compression, excessive reverb, distorted vocals, "
-    "abrupt ending, truncated ending, early fade-out"
+    "doubled vocals, vocal ad-libs, "
+    "changed melody, changed phrasing, "
+    "missing vocal phrases, competing lead instruments, "
+    "overpowering drums, excessive reverb, "
+    "distorted vocals, truncated ending"
 ),
 ):
     if not SUNO_API_KEY:
