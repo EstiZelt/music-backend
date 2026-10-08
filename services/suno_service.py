@@ -44,7 +44,7 @@ async def add_instrumental(
             f"{len(negative_tags)}/500 characters"
         )
 
-    url = f"{SUNO_BASE_URL}/api/v1/generate/add-instrumental"
+    url = f"{SUNO_BASE_URL}/api/v1/generate/upload-cover"
 
     headers = {
         "Authorization": f"Bearer {SUNO_API_KEY}",
