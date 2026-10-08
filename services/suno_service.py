@@ -52,7 +52,11 @@ negative_tags: str = (
         "Authorization": f"Bearer {SUNO_API_KEY}",
         "Content-Type": "application/json",
     }
-
+    if len(final_negative_tags) > 500:
+        raise ValueError(
+            f"negative_tags exceeds Suno limit: "
+            f"{len(final_negative_tags)}/500 characters"
+        )
     payload = {
         "uploadUrl": upload_url,
         "title": title,
