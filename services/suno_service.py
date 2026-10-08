@@ -10,24 +10,26 @@ async def add_instrumental(
     upload_url: str,
     title: str = "My Song",
     tags: str = (
-        "Professional studio production built around the exact uploaded "
-        "vocal performance. "
-        "Preserve the original lead vocal identity, natural tone, "
-        "melody, pitch contour, rhythm, phrasing, breaths, pauses, "
-        "timing and emotional expression. "
-        "Add a refined, warm piano-led accompaniment with gentle strings, "
-        "soft bass and restrained percussion. "
-        "All instruments must follow and support the existing vocal performance. "
-        "Preserve the complete structure and every phrase through the natural "
-        "final ending. "
-        "Keep the original lead vocal clear, prominent and authentic."
+       "Premium professional studio production, emotionally rich "
+        "and elegant musical arrangement. "
+        "Preserve the uploaded lead vocal as the central performance, "
+        "retaining its natural vocal character, original melody, "
+        "phrasing and timing. "
+        "Create beautiful piano harmonies, expressive warm strings, "
+        "rounded bass, subtle acoustic percussion and tasteful "
+        "orchestral textures. "
+        "Begin with an intimate arrangement and gradually build "
+        "toward powerful but balanced musical climaxes. "
+        "Follow the singer's natural pauses and expressive timing. "
+        "Maintain the complete vocal performance and provide a "
+        "satisfying musical resolution after the final vocal phrase."
         ),
     negative_tags: str = (
-       "new lead singer, replaced vocals, altered vocal identity, "
-        "vocal harmonies, backing vocals, choir, doubled vocals, "
-        "ad-libs, excessive pitch correction, vocal rephrasing, "
-        "changed melody, competing instrumental melodies, "
-        "busy arrangement, missing phrases, truncated ending"
+       "replacement singer, synthetic lead voice, backing vocals, "
+        "choir, vocal harmonies, doubled lead, vocal ad-libs, "
+        "aggressive pitch correction, instrumental lead melody, "
+        "excessive orchestration, overpowering drums, "
+        "abrupt ending, missing vocal sections"
     ),
 ):
     if not SUNO_API_KEY:
