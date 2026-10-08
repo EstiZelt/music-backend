@@ -10,32 +10,24 @@ async def add_instrumental(
     upload_url: str,
     title: str = "My Song",
     tags: str = (
-        "professional studio accompaniment, "
-        "supportive clean arrangement, "
-        "piano, warm strings, subtle drums, "
-        "follow the original melody, rhythm and phrasing accurately, "
-        "leave musical space for the lead vocal, "
-        "use the complete uploaded melody from beginning to end, "
-        "preserve every musical phrase, "
-        "do not omit or shorten any phrase, "
-        "do not end the arrangement before the original melody is complete, "
-        "follow the full structure of the uploaded audio"
-    ),
+        "Professional studio production built around the exact uploaded "
+        "vocal performance. "
+        "Preserve the original lead vocal identity, natural tone, "
+        "melody, pitch contour, rhythm, phrasing, breaths, pauses, "
+        "timing and emotional expression. "
+        "Add a refined, warm piano-led accompaniment with gentle strings, "
+        "soft bass and restrained percussion. "
+        "All instruments must follow and support the existing vocal performance. "
+        "Preserve the complete structure and every phrase through the natural "
+        "final ending. "
+        "Keep the original lead vocal clear, prominent and authentic."
+        ),
     negative_tags: str = (
-        "lead melody doubling, "
-        "instrumental melody copying the vocal, "
-        "busy countermelody, "
-        "dense orchestration, "
-        "solo instruments competing with the vocal, "
-        "choir, backing vocals, background vocals, vocal harmonies, "
-        "second voice, doubled vocals, layered vocals, "
-        "call and response, vocal ad-libs, "
-        "heavy drums, heavy metal, distorted vocals, "
-        "truncated ending, "
-        "early ending, "
-        "omitted phrases, "
-        "shortened structure, "
-        "missing melody sections"
+       "new lead singer, replaced vocals, altered vocal identity, "
+        "vocal harmonies, backing vocals, choir, doubled vocals, "
+        "ad-libs, excessive pitch correction, vocal rephrasing, "
+        "changed melody, competing instrumental melodies, "
+        "busy arrangement, missing phrases, truncated ending"
     ),
 ):
     if not SUNO_API_KEY:
