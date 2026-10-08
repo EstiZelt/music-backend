@@ -10,27 +10,41 @@ async def add_instrumental(
     upload_url: str,
     title: str = "My Song",
     tags: str = (
-       "Premium professional studio production, emotionally rich "
-        "and elegant musical arrangement. "
-        "Preserve the uploaded lead vocal as the central performance, "
-        "retaining its natural vocal character, original melody, "
-        "phrasing and timing. "
-        "Create beautiful piano harmonies, expressive warm strings, "
-        "rounded bass, subtle acoustic percussion and tasteful "
-        "orchestral textures. "
-        "Begin with an intimate arrangement and gradually build "
-        "toward powerful but balanced musical climaxes. "
-        "Follow the singer's natural pauses and expressive timing. "
-        "Maintain the complete vocal performance and provide a "
-        "satisfying musical resolution after the final vocal phrase."
-        ),
-    negative_tags: str = (
-       "replacement singer, synthetic lead voice, backing vocals, "
-        "choir, vocal harmonies, doubled lead, vocal ad-libs, "
-        "aggressive pitch correction, instrumental lead melody, "
-        "excessive orchestration, overpowering drums, "
-        "abrupt ending, missing vocal sections"
-    ),
+    "Professional high-end studio production of the uploaded "
+    "original vocal recording. "
+    "Use the original singer's voice as the lead vocal throughout "
+    "the entire song. "
+    "Preserve the original vocal timbre, identity, tone, "
+    "natural expression, phrasing, breaths and emotional delivery. "
+    "Apply only gentle, transparent pitch correction to inaccurate notes, "
+    "while preserving natural pitch transitions and vibrato. "
+    "Keep the original vocal melody, timing and rhythmic phrasing. "
+    "Create a beautiful, rich, emotionally expressive musical arrangement "
+    "built around the existing vocal performance. "
+    "Warm acoustic piano, lush strings, supportive bass, "
+    "subtle percussion and elegant harmonic development. "
+    "Professional vocal mixing, natural EQ, gentle compression, "
+    "subtle reverb, balanced instrumentation and polished mastering. "
+    "Keep the original lead vocal clear, warm, natural "
+    "and prominent in the final mix. "
+    "Preserve every vocal phrase and the complete original song structure. "
+    "Finish naturally after the final vocal phrase."
+),
+
+negative_tags: str = (
+    "voice replacement, new singer, synthetic vocals, "
+    "changed vocal identity, altered vocal timbre, "
+    "re-sung vocals, vocal regeneration, "
+    "heavy autotune, robotic pitch correction, "
+    "unnatural pitch transitions, excessive vocal processing, "
+    "backing vocals, choir, vocal harmonies, "
+    "doubled vocals, layered vocals, vocal ad-libs, "
+    "changed melody, changed phrasing, missing vocal phrases, "
+    "instrumental melody doubling the singer, "
+    "competing instrumental solos, overpowering instruments, "
+    "harsh compression, excessive reverb, distorted vocals, "
+    "abrupt ending, truncated ending, early fade-out"
+),
 ):
     if not SUNO_API_KEY:
         raise RuntimeError("SUNO_API_KEY is not configured")
