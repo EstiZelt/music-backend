@@ -8,14 +8,14 @@ SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
 DEFAULT_STYLE = (
-    "Professional studio music production. "
-    "Combine the provided original lead vocal recording "
-    "with the provided instrumental accompaniment. "
-    "Preserve the original vocal melody, natural vocal timbre, "
-    "phrasing, rhythm, timing and emotion. "
-    "Use the instrumental as supportive accompaniment. "
-    "Keep the lead vocal clearly dominant. "
-    "Create a cohesive, balanced studio mix with a natural ending."
+    "Vocal song with instrumental accompaniment. "
+    "The lead vocal from the first uploaded audio must "
+    "be clearly audible throughout the song. "
+    "Use the second uploaded audio as backing music. "
+    "Keep the original vocal melody, rhythm and phrasing. "
+    "Do not produce an instrumental-only track. "
+    "No backing singers, choir or additional vocal layers. "
+    "Balanced professional studio mix."
 )
 
 
