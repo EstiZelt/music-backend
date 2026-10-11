@@ -36,6 +36,7 @@ async def generate_upload_cover(
     title: str = "My Song",
     style: str = DEFAULT_COVER_STYLE,
     negative_tags: str = DEFAULT_COVER_NEGATIVE_TAGS,
+    lyrics: str = "",
 ):
     if not SUNO_API_KEY:
         raise RuntimeError("SUNO_API_KEY is not configured")
@@ -74,8 +75,12 @@ async def generate_upload_cover(
         "styleWeight": 0.5,
         "weirdnessConstraint": 0.0,
         "variety": 0,
+        "lyrics": lyrics,
     }
 
+    if lyrics.strip():
+    payload["lyrics"] = lyrics.strip()
+    
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
             url,
