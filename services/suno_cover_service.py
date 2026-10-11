@@ -26,20 +26,14 @@ DEFAULT_COVER_STYLE = (
 )
 
 DEFAULT_COVER_NEGATIVE_TAGS = (
-    "voice replacement, AI generated vocals, synthetic voice, "
-    "re-singing, voice cloning, vocal resynthesis, voice morphing, "
-    "altered vocal fingerprint, changed singer identity, "
-    "changed timbre, formant shifting, altered resonance, "
-    "changed texture, accent, pronunciation or vibrato, "
-    "autotune, robotic tuning, artificial vocal enhancement, "
-    "changed melody, lyrics, notes, phrasing or timing, "
-    "missing words, breaths or vocal phrases, "
-    "backing vocals, choir, harmonies, doubled vocals, "
-    "layered vocals, second singer, vocal ad-libs, "
-    "instrumental only, missing original lead vocal, "
-    "competing melodies, instruments doubling vocals, "
-    "overpowering drums, vocal distortion, "
-    "abrupt ending, truncated vocals"
+    "instrumental only, missing vocals, replacement singer, "
+    "altered voice, synthetic vocals, re-sung vocals, "
+    "autotune, robotic voice, backing vocals, choir, "
+    "vocal harmonies, doubled vocals, vocal ad-libs, "
+    "changed melody, changed phrasing, missing lyrics, "
+    "missing phrases, competing melodies, "
+    "instruments doubling lead vocal, heavy drums, "
+    "distorted vocals, abrupt ending, truncated ending"
 )
 
 
