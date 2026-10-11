@@ -6,6 +6,9 @@ from pydantic import BaseModel
 from services.suno_service import (
     add_instrumental,
     get_generation_details,
+)
+
+from services.suno_mashup_service import (
     generate_mashup,
     get_mashup_details,
 )
