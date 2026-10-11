@@ -6,35 +6,50 @@ SUNO_API_KEY = os.getenv("SUNO_API_KEY")
 SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
+
 DEFAULT_TAGS = (
-    "Professional studio production using the original lead vocal. "
-    "Preserve the singer's exact vocal timbre, identity, melody, "
-    "phrasing, timing, breaths and emotion. "
-    "Apply gentle, natural pitch correction without changing the voice. "
-    "Add rich piano, warm strings, soft bass and subtle drums. "
-    "Follow the vocal closely with supportive harmonies, no competing melodies. "
-    "Professional vocal mix, EQ, compression, reverb and mastering. "
-    "Deliver the complete song with original vocals and a natural ending."
+    "ABSOLUTE PRIORITY: Preserve the EXACT ORIGINAL uploaded "
+    "lead vocal recording and singer's UNIQUE VOCAL FINGERPRINT. "
+    "Keep 100% of the original voice identity, timbre, formants, "
+    "resonance, texture, accent, pronunciation, vibrato, breaths, "
+    "emotion, melody, lyrics, phrasing and timing. "
+    "NEVER regenerate, replace, imitate, resynthesize or re-sing "
+    "the voice. Use the AUTHENTIC ORIGINAL vocal audio unchanged. "
+    "Preserve every note, syllable, pause and natural imperfection. "
+    "NO pitch correction unless absolutely essential and inaudible. "
+    "Build rich professional piano, strings, bass and rhythmic "
+    "drums AROUND the vocal, following its exact timing and melody. "
+    "Original lead vocal always dominant. No additional voices. "
+    "Transparent studio mixing, subtle EQ, compression and reverb. "
+    "Keep the COMPLETE original performance and natural ending. "
+    "VOCAL AUTHENTICITY OVERRIDES ALL PRODUCTION ENHANCEMENTS."
 )
 
+
 DEFAULT_NEGATIVE_TAGS = (
-    "instrumental only, missing vocals, replacement singer, "
-    "altered voice, synthetic vocals, re-sung vocals, "
-    "heavy autotune, robotic pitch correction, "
-    "backing vocals, choir, vocal harmonies, doubled vocals, "
-    "vocal ad-libs, changed melody, changed phrasing, "
-    "missing phrases, competing instrumental solos, "
-    "instruments doubling the vocal melody, "
-    "overpowering drums, distorted vocals, "
-    "abrupt ending, truncated ending"
+    "voice replacement, AI generated vocals, synthetic voice, "
+    "re-singing, voice cloning, vocal resynthesis, voice morphing, "
+    "altered vocal fingerprint, changed singer identity, "
+    "changed timbre, formant shifting, altered resonance, "
+    "changed texture, accent, pronunciation or vibrato, "
+    "autotune, robotic tuning, artificial vocal enhancement, "
+    "changed melody, lyrics, notes, phrasing or timing, "
+    "missing words, breaths or vocal phrases, "
+    "backing vocals, choir, harmonies, doubled vocals, "
+    "layered vocals, second singer, vocal ad-libs, "
+    "instrumental only, missing original lead vocal, "
+    "competing melodies, instruments doubling vocals, "
+    "overpowering drums, vocal distortion, "
+    "abrupt ending, truncated vocals"
 )
+
 
 async def add_instrumental(
     upload_url: str,
     title: str = "My Song",
     tags: str = DEFAULT_TAGS,
     negative_tags: str = DEFAULT_NEGATIVE_TAGS,
-    
+    lyrics: str | None = None,
 ):
     if not SUNO_API_KEY:
         raise RuntimeError("SUNO_API_KEY is not configured")
@@ -66,6 +81,14 @@ async def add_instrumental(
         "variety": 0,
     }
 
+    if lyrics and lyrics.strip():
+        if len(lyrics) > 5000:
+            raise ValueError(
+                "lyrics exceeds Suno V6 limit: 5000 characters"
+            )
+        payload["lyrics"] = lyrics
+
+    
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
             url,
