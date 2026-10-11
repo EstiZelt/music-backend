@@ -9,26 +9,27 @@ SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
 
+
 DEFAULT_STYLE = (
-    "Vocal song with instrumental accompaniment. "
-    "Preserve the ORIGINAL lead vocal from the first audio "
-    "as faithfully as possible. Keep the singer's exact "
-    "voice timbre, natural tone, texture, accent, pronunciation, "
-    "vibrato, breaths and emotional expression. "
-    "Preserve ALL original sung words without changing, "
-    "omitting, repeating or inventing lyrics. "
-    "Keep the original melody, pitch, rhythm, phrasing, "
-    "pauses and timing. No vocal regeneration, replacement, "
-    "pitch correction or time stretching. "
-    "Use the second audio ONLY as instrumental backing, "
-    "following the original vocal performance. "
-    "Keep the original singer clearly audible and dominant. "
-    "No new singer, backing vocals, choir, harmonies, "
-    "vocal doubling or additional voices. "
-    "Produce a complete song WITH the original vocals, "
-    "NOT an instrumental-only track. "
-    "Create a balanced studio mix with a natural ending."
+    "CRITICAL: Preserve the EXACT ORIGINAL uploaded lead vocal "
+    "recording with maximum fidelity. The singer's UNIQUE VOCAL "
+    "FINGERPRINT and identity are SACRED and MUST remain unchanged. "
+    "Retain the original vocal audio, timbre, formants, resonance, "
+    "texture, accent, pronunciation, vibrato, breaths, emotion, "
+    "lyrics, melody, phrasing, pitch and timing. "
+    "NEVER regenerate, replace, imitate, resing, transform or "
+    "resynthesize the singer's voice. NO voice modification, "
+    "autotune, pitch shifting or artificial vocal enhancement. "
+    "Preserve every original note, syllable, pause and imperfection. "
+    "ONLY add professional instrumental accompaniment: expressive "
+    "piano, warm strings, bass and tasteful rhythmic drums. "
+    "Adapt ALL instruments to the ORIGINAL vocal, NEVER the reverse. "
+    "No backing vocals, choir, harmonies, doubling or extra voices. "
+    "Keep the original vocal dominant, complete and uninterrupted. "
+    "Natural studio mix and beautiful ending. "
+    "ORIGINAL VOCAL AUTHENTICITY OVERRIDES EVERYTHING."
 )
+
 
 
 
