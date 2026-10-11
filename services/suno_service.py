@@ -45,7 +45,7 @@ async def add_instrumental(
             f"{len(negative_tags)}/500 characters"
         )
 
-    url = f"{SUNO_BASE_URL}/api/v1/generate/upload-cover"
+    url = f"{SUNO_BASE_URL}/api/v1/generate/add-instrumental"
 
     headers = {
         "Authorization": f"Bearer {SUNO_API_KEY}",
@@ -57,7 +57,6 @@ async def add_instrumental(
         "title": title,
         "tags": tags,
         "negativeTags": negative_tags,
-        "instrumental": False,
         "callBackUrl": "https://example.com/callback",
 
         "model": "V6",
