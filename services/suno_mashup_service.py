@@ -8,42 +8,28 @@ SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
 
+
 DEFAULT_STYLE = (
-    "Original vocal preservation, faithful vocal performance, "
-    "professional studio mix with instrumental accompaniment. "
-
-    "The first uploaded audio contains the ORIGINAL lead vocal. "
-    "Treat this vocal recording as the primary performance "
-    "and preserve it as faithfully as possible. "
-
-    "Retain the singer's original vocal timbre, unique voice "
-    "character, tone, natural texture, resonance, articulation, "
-    "pronunciation, accent, breaths, vibrato and emotional expression. "
-
-    "Preserve every original sung word exactly as performed. "
-    "Do not rewrite, replace, omit, repeat or invent lyrics. "
-    "Follow the original vocal recording for all words and phrasing. "
-
-    "Keep the exact original melody, pitch contour, note durations, "
-    "rhythm, tempo variations, pauses and vocal entrances. "
-    "Avoid pitch correction, time stretching, vocal regeneration "
-    "or any unnecessary changes to the lead vocal. "
-
-    "The second uploaded audio is the INSTRUMENTAL ACCOMPANIMENT. "
-    "Use it as supportive backing music and adapt its arrangement "
-    "to the original vocal performance, not the other way around. "
-
-    "Keep the original lead vocal clearly audible and dominant "
-    "throughout the entire song. "
-    "Do not generate a new singer, backing vocals, harmonies, "
-    "choir, doubled vocals or additional vocal layers. "
-
-    "Produce a complete vocal song, NOT an instrumental-only track. "
-    "Blend the original vocal and instrumental into a cohesive, "
-    "balanced professional studio production. "
-    "Preserve the complete original vocal performance "
-    "and finish with a natural musical ending."
+    "Vocal song with instrumental accompaniment. "
+    "Preserve the ORIGINAL lead vocal from the first audio "
+    "as faithfully as possible. Keep the singer's exact "
+    "voice timbre, natural tone, texture, accent, pronunciation, "
+    "vibrato, breaths and emotional expression. "
+    "Preserve ALL original sung words without changing, "
+    "omitting, repeating or inventing lyrics. "
+    "Keep the original melody, pitch, rhythm, phrasing, "
+    "pauses and timing. No vocal regeneration, replacement, "
+    "pitch correction or time stretching. "
+    "Use the second audio ONLY as instrumental backing, "
+    "following the original vocal performance. "
+    "Keep the original singer clearly audible and dominant. "
+    "No new singer, backing vocals, choir, harmonies, "
+    "vocal doubling or additional voices. "
+    "Produce a complete song WITH the original vocals, "
+    "NOT an instrumental-only track. "
+    "Create a balanced studio mix with a natural ending."
 )
+
 
 
 
