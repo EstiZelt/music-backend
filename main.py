@@ -45,6 +45,7 @@ class MashupRequest(BaseModel):
     vocal_url: str
     instrumental_url: str
     title: str = "My Mashup"
+    lyrics: str | None = None
 
 
 @app.get("/")
@@ -139,6 +140,7 @@ async def create_mashup(request: MashupRequest):
             vocal_url=request.vocal_url,
             instrumental_url=request.instrumental_url,
             title=request.title,
+            lyrics=request.lyrics,
         )
     except (ValueError, RuntimeError) as e:
         raise HTTPException(
