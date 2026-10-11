@@ -39,6 +39,11 @@ app.add_middleware(
 class InstrumentalRequest(BaseModel):
     upload_url: str
     title: str = "POC Song"
+    lyrics: str | None = Field(
+        default=None,
+        max_length=5000,
+        description="Optional song lyrics",
+    )
 
 
 class AlignmentRequest(BaseModel):
@@ -71,6 +76,8 @@ async def create_instrumental(request: InstrumentalRequest):
         result = await add_instrumental(
             upload_url=request.upload_url,
             title=request.title,
+            lyrics=request.lyrics,
+
         )
 
         return {
