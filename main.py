@@ -10,6 +10,7 @@ import os
 from services.suno_service import (
     add_instrumental,
     get_generation_details,
+    upload_cover,
 )
 
 from services.alignment_service import analyze_alignment
@@ -18,7 +19,7 @@ from services.timing_service import create_timing_test_mix
 
 app = FastAPI(
     title="Music Backend",
-    version="2.1.0",
+    version="2.2.0",
 )
 
 app.add_middleware(
@@ -33,6 +34,18 @@ app.add_middleware(
 class InstrumentalRequest(BaseModel):
     upload_url: str
     title: str = "POC Song"
+
+
+class CoverRequest(BaseModel):
+    upload_url: str
+    title: str = "POC Cover"
+    style: str = (
+        "Professional studio instrumental accompaniment, "
+        "warm piano, expressive strings, gentle rhythmic drums, "
+        "faithful to the uploaded melody and musical phrasing, "
+        "preserve the original song structure and natural timing, "
+        "supportive arrangement with no competing lead melody"
+    )
 
 
 class AlignmentRequest(BaseModel):
@@ -78,6 +91,27 @@ async def create_instrumental(request: InstrumentalRequest):
         result = await add_instrumental(
             upload_url=request.upload_url,
             title=request.title,
+        )
+
+        return {
+            "success": True,
+            "data": result,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
+
+
+@app.post("/cover")
+async def create_cover(request: CoverRequest):
+    try:
+        result = await upload_cover(
+            upload_url=request.upload_url,
+            title=request.title,
+            style=request.style,
         )
 
         return {
