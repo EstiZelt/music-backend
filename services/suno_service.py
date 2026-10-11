@@ -8,21 +8,14 @@ SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
 DEFAULT_TAGS = (
-    "ABSOLUTE PRIORITY: Preserve the EXACT ORIGINAL uploaded "
-    "lead vocal recording and singer's UNIQUE VOCAL FINGERPRINT. "
-    "Keep 100% of the original voice identity, timbre, formants, "
-    "resonance, texture, accent, pronunciation, vibrato, breaths, "
-    "emotion, melody, lyrics, phrasing and timing. "
-    "NEVER regenerate, replace, imitate, resynthesize or re-sing "
-    "the voice. Use the AUTHENTIC ORIGINAL vocal audio unchanged. "
-    "Preserve every note, syllable, pause and natural imperfection. "
-    "NO pitch correction unless absolutely essential and inaudible. "
-    "Build rich professional piano, strings, bass and rhythmic "
-    "drums AROUND the vocal, following its exact timing and melody. "
-    "Original lead vocal always dominant. No additional voices. "
-    "Transparent studio mixing, subtle EQ, compression and reverb. "
-    "Keep the COMPLETE original performance and natural ending. "
-    "VOCAL AUTHENTICITY OVERRIDES ALL PRODUCTION ENHANCEMENTS."
+    "Professional studio production using the original lead vocal. "
+    "Preserve the singer's exact vocal timbre, identity, melody, "
+    "phrasing, timing, breaths and emotion. "
+    "Apply gentle, natural pitch correction without changing the voice. "
+    "Add rich piano, warm strings, soft bass and subtle drums. "
+    "Follow the vocal closely with supportive harmonies, no competing melodies. "
+    "Professional vocal mix, EQ, compression, reverb and mastering. "
+    "Deliver the complete song with original vocals and a natural ending."
 )
 
 
@@ -30,12 +23,13 @@ DEFAULT_TAGS = (
 DEFAULT_NEGATIVE_TAGS = (
     "instrumental only, missing vocals, replacement singer, "
     "altered voice, synthetic vocals, re-sung vocals, "
-    "autotune, robotic voice, backing vocals, choir, "
-    "vocal harmonies, doubled vocals, vocal ad-libs, "
-    "changed melody, changed phrasing, missing lyrics, "
-    "missing phrases, competing melodies, "
-    "instruments doubling lead vocal, heavy drums, "
-    "distorted vocals, abrupt ending, truncated ending"
+    "heavy autotune, robotic pitch correction, "
+    "backing vocals, choir, vocal harmonies, doubled vocals, "
+    "vocal ad-libs, changed melody, changed phrasing, "
+    "missing phrases, competing instrumental solos, "
+    "instruments doubling the vocal melody, "
+    "overpowering drums, distorted vocals, "
+    "abrupt ending, truncated ending"
 )
 
 
