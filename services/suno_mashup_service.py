@@ -24,6 +24,7 @@ async def generate_mashup(
     instrumental_url: str,
     title: str = "My Mashup",
     style: str = DEFAULT_STYLE,
+    lyrics: str | None = None
 ):
     if not SUNO_API_KEY:
         raise RuntimeError("SUNO_API_KEY is not configured")
@@ -57,6 +58,8 @@ async def generate_mashup(
         "weirdnessConstraint": 0.0,
         "variety": 0,
     }
+    if lyrics:
+            payload["lyrics"] = lyrics
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
