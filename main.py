@@ -157,3 +157,4 @@ async def mashup_details(task_id: str):
         raise HTTPException(
             status_code=502,
             detail=e.response.text
+        )
