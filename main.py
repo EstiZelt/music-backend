@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from services.suno_service import (
     add_instrumental,
     get_generation_details,
+    generate_mashup,
+    get_mashup_details,
 )
 
 from services.alignment_service import analyze_alignment
@@ -34,6 +36,12 @@ class InstrumentalRequest(BaseModel):
 class AlignmentRequest(BaseModel):
     vocal_url: str
     instrumental_url: str
+
+
+class MashupRequest(BaseModel):
+    vocal_url: str
+    instrumental_url: str
+    title: str = "My Mashup"
 
 
 @app.get("/")
@@ -120,3 +128,32 @@ async def test_timing_mix(request: AlignmentRequest):
             status_code=500,
             detail=str(e)
         )
+
+@app.post("/mashup")
+async def create_mashup(request: MashupRequest):
+    try:
+        return await generate_mashup(
+            vocal_url=request.vocal_url,
+            instrumental_url=request.instrumental_url,
+            title=request.title,
+        )
+    except (ValueError, RuntimeError) as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=e.response.text
+        )
+
+
+@app.get("/mashup-details/{task_id}")
+async def mashup_details(task_id: str):
+    try:
+        return await get_mashup_details(task_id)
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=e.response.text
