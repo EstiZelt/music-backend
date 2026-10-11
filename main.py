@@ -1,7 +1,11 @@
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from starlette.background import BackgroundTask
+
+import os
 
 from services.suno_service import (
     add_instrumental,
@@ -14,7 +18,7 @@ from services.timing_service import create_timing_test_mix
 
 app = FastAPI(
     title="Music Backend",
-    version="2.0.0"
+    version="2.1.0",
 )
 
 app.add_middleware(
@@ -36,11 +40,35 @@ class AlignmentRequest(BaseModel):
     instrumental_url: str
 
 
+class TimingMixRequest(BaseModel):
+    vocal_url: str
+    instrumental_url: str
+
+    instrumental_delay_seconds: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=15.0,
+        description=(
+            "Delay the instrumental in seconds. "
+            "The original vocal is never shifted."
+        ),
+    )
+
+    preview_duration_seconds: float = Field(
+        default=30.0,
+        ge=5.0,
+        le=180.0,
+        description=(
+            "Length of the diagnostic mix in seconds."
+        ),
+    )
+
+
 @app.get("/")
 def health():
     return {
         "status": "online",
-        "service": "music-backend"
+        "service": "music-backend",
     }
 
 
@@ -54,13 +82,13 @@ async def create_instrumental(request: InstrumentalRequest):
 
         return {
             "success": True,
-            "data": result
+            "data": result,
         }
 
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=str(e)
+            detail=str(e),
         )
 
 
@@ -71,13 +99,13 @@ async def song_status(task_id: str):
 
         return {
             "success": True,
-            "data": result
+            "data": result,
         }
 
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=str(e)
+            detail=str(e),
         )
 
 
@@ -91,32 +119,42 @@ async def alignment_analysis(request: AlignmentRequest):
 
         return {
             "success": True,
-            "data": result
+            "data": result,
         }
 
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=str(e)
+            detail=str(e),
         )
 
 
 @app.post("/test-timing-mix")
-async def test_timing_mix(request: AlignmentRequest):
+async def test_timing_mix(request: TimingMixRequest):
     try:
         result = await create_timing_test_mix(
             vocal_url=request.vocal_url,
             instrumental_url=request.instrumental_url,
+            instrumental_delay_seconds=(
+                request.instrumental_delay_seconds
+            ),
+            preview_duration_seconds=(
+                request.preview_duration_seconds
+            ),
         )
 
         return FileResponse(
             path=result["file_path"],
             media_type="audio/wav",
             filename="timing_test_mix.wav",
+            background=BackgroundTask(
+                os.unlink,
+                result["file_path"],
+            ),
         )
 
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=str(e)
+            detail=str(e),
         )
