@@ -55,6 +55,7 @@ class MashupRequest(BaseModel):
 class UploadCoverRequest(BaseModel):
     upload_url: str
     title: str = "My Song"
+    lyrics: str = ""
 
 @app.get("/")
 def health():
@@ -180,8 +181,8 @@ async def upload_cover_endpoint(
         result = await generate_upload_cover(
             upload_url=request.upload_url,
             title=request.title,
+            lyrics=request.lyrics,
         )
-
         return result
 
     except Exception as e:
@@ -189,7 +190,6 @@ async def upload_cover_endpoint(
             status_code=500,
             detail=str(e)
         )
-
 
 @app.get("/cover-generation-details/{task_id}")
 async def cover_generation_details_endpoint(
