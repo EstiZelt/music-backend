@@ -1,59 +1,78 @@
+
 import io
+import gc
 
 import httpx
 import librosa
 import numpy as np
 
 
+# Low-memory analysis settings.
+# These settings affect analysis only, not the original audio.
+ANALYSIS_SR = 11025
+HOP_LENGTH = 2048
+N_FFT = 2048
+POINT_INTERVAL_SECONDS = 2.0
+
+
 async def _download_audio(url: str):
     """
-    Download audio and decode it as mono.
-    No audio modification is performed.
+    Download and decode audio at a reduced sample rate.
+
+    The original audio file is NOT modified.
+    Only the in-memory analysis copy is downsampled.
     """
     async with httpx.AsyncClient(
         timeout=120.0,
         follow_redirects=True,
     ) as client:
         response = await client.get(url)
+        response.raise_for_status()
+        audio_data = response.content
 
-    response.raise_for_status()
+    with io.BytesIO(audio_data) as audio_bytes:
+        y, sr = librosa.load(
+            audio_bytes,
+            sr=ANALYSIS_SR,
+            mono=True,
+            dtype=np.float32,
+        )
 
-    audio_bytes = io.BytesIO(response.content)
+    del audio_data, response
 
-    y, sr = librosa.load(
-        audio_bytes,
-        sr=None,
-        mono=True,
-    )
+    if len(y) == 0:
+        raise ValueError("Downloaded audio is empty.")
 
     return y, sr
 
 
 def _basic_analysis(y, sr):
-    duration = librosa.get_duration(
-        y=y,
-        sr=sr,
-    )
+    """
+    Estimate duration, tempo and beat positions
+    using low-memory analysis settings.
+    """
+    duration = len(y) / float(sr)
 
     tempo, beat_frames = librosa.beat.beat_track(
         y=y,
         sr=sr,
+        hop_length=HOP_LENGTH,
     )
 
     beat_times = librosa.frames_to_time(
         beat_frames,
         sr=sr,
+        hop_length=HOP_LENGTH,
     )
 
-    if isinstance(tempo, np.ndarray):
-        tempo = float(tempo.flat[0])
-    else:
-        tempo = float(tempo)
+    tempo_value = float(
+        np.asarray(tempo).reshape(-1)[0]
+    )
 
     return {
-        "duration_seconds": round(float(duration), 3),
+        "duration_seconds": round(duration, 3),
         "sample_rate": int(sr),
-        "tempo_bpm": round(tempo, 3),
+        "tempo_bpm": round(tempo_value, 3),
         "beat_count": int(len(beat_times)),
         "beat_times": [
             round(float(t), 3)
@@ -62,39 +81,34 @@ def _basic_analysis(y, sr):
     }
 
 
-def _prepare_chroma(
-    y,
-    sr,
-    target_sr=22050,
-):
+def _prepare_chroma(y, sr):
     """
-    Create a musical representation for alignment.
+    Create a lightweight chroma representation.
 
-    Chroma focuses mainly on pitch-class movement rather than
-    timbre, which makes it more suitable for comparing a vocal
-    recording with an instrumental arrangement.
+    Avoids:
+    - harmonic separation (HPSS)
+    - chroma_cqt
+    - high-resolution feature frames
+
+    No audio is modified.
     """
-
-    if sr != target_sr:
-        y = librosa.resample(
-            y,
-            orig_sr=sr,
-            target_sr=target_sr,
-        )
-
-        sr = target_sr
-
-    y_harmonic = librosa.effects.harmonic(y)
-
-    hop_length = 512
-
-    chroma = librosa.feature.chroma_cqt(
-        y=y_harmonic,
+    chroma = librosa.feature.chroma_stft(
+        y=y,
         sr=sr,
-        hop_length=hop_length,
+        n_fft=N_FFT,
+        hop_length=HOP_LENGTH,
+        tuning=0.0,
     )
 
-    return chroma, sr, hop_length
+    chroma = np.asarray(
+        chroma,
+        dtype=np.float32,
+    )
+
+    # Avoid zero-length vectors in cosine distance.
+    chroma += 1e-8
+
+    return chroma, sr, HOP_LENGTH
 
 
 def _calculate_local_alignment(
@@ -104,36 +118,31 @@ def _calculate_local_alignment(
     instrumental_sr,
 ):
     """
-    Diagnostic local musical alignment using chroma + DTW.
+    Low-memory diagnostic alignment using
+    chroma STFT + Dynamic Time Warping.
 
-    No audio is modified here.
+    No audio is modified.
     """
 
-    (
-        vocal_chroma,
-        prepared_vocal_sr,
-        vocal_hop,
-    ) = _prepare_chroma(
-        vocal,
-        vocal_sr,
+    vocal_chroma, prepared_vocal_sr, vocal_hop = (
+        _prepare_chroma(vocal, vocal_sr)
     )
 
-    (
-        instrumental_chroma,
-        prepared_instrumental_sr,
-        instrumental_hop,
-    ) = _prepare_chroma(
-        instrumental,
-        instrumental_sr,
+    instrumental_chroma, prepared_instrumental_sr, instrumental_hop = (
+        _prepare_chroma(instrumental, instrumental_sr)
     )
 
+    # With the reduced frame rate, the DTW matrix
+    # is much smaller than in the previous version.
     _, warping_path = librosa.sequence.dtw(
         X=vocal_chroma,
         Y=instrumental_chroma,
         metric="cosine",
     )
 
-    # DTW path is returned backwards.
+    del vocal_chroma, instrumental_chroma
+
+    # librosa returns the path in reverse order.
     warping_path = warping_path[::-1]
 
     vocal_times = librosa.frames_to_time(
@@ -148,82 +157,58 @@ def _calculate_local_alignment(
         hop_length=instrumental_hop,
     )
 
-    # IMPORTANT:
-    # Use the real last time represented by the DTW path.
-    # This avoids the duplicated end points we saw previously.
+    del warping_path
+
     max_source_time = float(vocal_times[-1])
 
     sample_times = np.arange(
         0.0,
         max_source_time,
-        2.0,
+        POINT_INTERVAL_SECONDS,
     )
 
-    # Always include the final valid point once.
     sample_times = np.append(
         sample_times,
         max_source_time,
     )
 
     alignment_points = []
+    seen_source_times = set()
 
     for requested_time in sample_times:
         index = int(
             np.argmin(
-                np.abs(
-                    vocal_times - requested_time
-                )
+                np.abs(vocal_times - requested_time)
             )
         )
 
-        source_time = float(
-            vocal_times[index]
+        source_time = round(
+            float(vocal_times[index]),
+            3,
         )
-
-        target_time = float(
-            instrumental_times[index]
-        )
-
-        shift = (
-            target_time - source_time
-        )
-
-        alignment_points.append(
-            {
-                "source_time": round(
-                    source_time,
-                    3,
-                ),
-                "target_time": round(
-                    target_time,
-                    3,
-                ),
-                "shift_seconds": round(
-                    shift,
-                    3,
-                ),
-            }
-        )
-
-    # Remove duplicate source points.
-    unique_points = []
-
-    seen_source_times = set()
-
-    for point in alignment_points:
-        source_time = point["source_time"]
 
         if source_time in seen_source_times:
             continue
 
         seen_source_times.add(source_time)
-        unique_points.append(point)
 
-    alignment_points = unique_points
+        target_time = round(
+            float(instrumental_times[index]),
+            3,
+        )
 
-    # ---------------------------------------------------------
-    # Reliability / suspicious jump analysis
-    # ---------------------------------------------------------
+        shift = round(
+            target_time - source_time,
+            3,
+        )
+
+        alignment_points.append({
+            "source_time": source_time,
+            "target_time": target_time,
+            "shift_seconds": shift,
+        })
+
+    del vocal_times, instrumental_times
 
     previous_shift = None
 
@@ -233,21 +218,14 @@ def _calculate_local_alignment(
         suspicious = False
         reasons = []
 
-        # A very large absolute displacement may indicate that
-        # DTW matched the vocal to a similar musical phrase
-        # somewhere else.
         if abs(shift) > 1.5:
             suspicious = True
             reasons.append(
                 "large_absolute_shift"
             )
 
-        # A sudden change relative to the previous point is also
-        # suspicious.
         if previous_shift is not None:
-            jump = abs(
-                shift - previous_shift
-            )
+            jump = abs(shift - previous_shift)
 
             if jump > 1.25:
                 suspicious = True
@@ -278,7 +256,7 @@ def _calculate_local_alignment(
                 point["shift_seconds"]
                 for point in reliable_points
             ],
-            dtype=float,
+            dtype=np.float32,
         )
 
         median_reliable_shift = float(
@@ -290,11 +268,7 @@ def _calculate_local_alignment(
         )
 
         max_reliable_shift = float(
-            np.max(
-                np.abs(
-                    reliable_shifts
-                )
-            )
+            np.max(np.abs(reliable_shifts))
         )
 
     else:
@@ -303,45 +277,29 @@ def _calculate_local_alignment(
         max_reliable_shift = 0.0
 
     return {
-        "method": "chroma_cqt_dtw",
-
-        "point_interval_seconds": 2.0,
-
+        "method": "chroma_stft_dtw_low_memory",
+        "point_interval_seconds": POINT_INTERVAL_SECONDS,
         "alignment_points": alignment_points,
-
         "summary": {
-            "total_points": len(
-                alignment_points
-            ),
-
-            "reliable_points": len(
-                reliable_points
-            ),
-
-            "suspicious_points": len(
-                suspicious_points
-            ),
-
+            "total_points": len(alignment_points),
+            "reliable_points": len(reliable_points),
+            "suspicious_points": len(suspicious_points),
             "median_reliable_shift_seconds": round(
-                median_reliable_shift,
-                3,
+                median_reliable_shift, 3
             ),
-
             "mean_reliable_shift_seconds": round(
-                mean_reliable_shift,
-                3,
+                mean_reliable_shift, 3
             ),
-
             "max_reliable_absolute_shift_seconds": round(
-                max_reliable_shift,
-                3,
+                max_reliable_shift, 3
             ),
         },
-
         "warning": (
-            "DTW alignment is diagnostic only. "
+            "Low-memory STFT/DTW alignment is approximate "
+            "and diagnostic only. "
             "Suspicious points must not be used directly "
-            "for vocal time-stretching."
+            "for vocal time-stretching. "
+            "Do not apply alignment automatically without validation."
         ),
     }
 
@@ -351,17 +309,21 @@ async def analyze_alignment(
     instrumental_url: str,
 ):
     """
-    Compare the original vocal with the generated instrumental.
+    Compare the original vocal and instrumental.
 
-    Diagnostic only.
-
-    No time stretching.
-    No pitch correction.
-    No modification of the original vocal.
+    Diagnostic only:
+    - No time stretching
+    - No pitch correction
+    - No change to original vocal
     """
 
     vocal, vocal_sr = await _download_audio(
         vocal_url
+    )
+
+    vocal_analysis = _basic_analysis(
+        vocal,
+        vocal_sr,
     )
 
     instrumental, instrumental_sr = (
@@ -370,54 +332,38 @@ async def analyze_alignment(
         )
     )
 
-    vocal_analysis = _basic_analysis(
-        vocal,
-        vocal_sr,
-    )
-
     instrumental_analysis = _basic_analysis(
         instrumental,
         instrumental_sr,
     )
 
-    local_alignment = (
-        _calculate_local_alignment(
-            vocal=vocal,
-            vocal_sr=vocal_sr,
-            instrumental=instrumental,
-            instrumental_sr=instrumental_sr,
-        )
+    local_alignment = _calculate_local_alignment(
+        vocal=vocal,
+        vocal_sr=vocal_sr,
+        instrumental=instrumental,
+        instrumental_sr=instrumental_sr,
     )
 
     duration_difference = (
-        instrumental_analysis[
-            "duration_seconds"
-        ]
-        - vocal_analysis[
-            "duration_seconds"
-        ]
+        instrumental_analysis["duration_seconds"]
+        - vocal_analysis["duration_seconds"]
     )
+
+    del vocal, instrumental
+    gc.collect()
 
     return {
         "vocal": vocal_analysis,
-
-        "instrumental": (
-            instrumental_analysis
-        ),
-
+        "instrumental": instrumental_analysis,
         "comparison": {
             "duration_difference_seconds": round(
-                duration_difference,
-                3,
+                duration_difference, 3
             ),
         },
-
-        "local_alignment": (
-            local_alignment
-        ),
-
+        "local_alignment": local_alignment,
         "note": (
             "Diagnostic analysis only. "
-            "No audio has been modified."
+            "Audio was downsampled for analysis. "
+            "Original audio files were not modified."
         ),
     }
