@@ -34,6 +34,7 @@ async def add_instrumental(
     title: str = "My Song",
     tags: str = DEFAULT_TAGS,
     negative_tags: str = DEFAULT_NEGATIVE_TAGS,
+    
 ):
     if not SUNO_API_KEY:
         raise RuntimeError("SUNO_API_KEY is not configured")
@@ -56,7 +57,7 @@ async def add_instrumental(
         "title": title,
         "tags": tags,
         "negativeTags": negative_tags,
-
+        "instrumental": False,
         "callBackUrl": "https://example.com/callback",
 
         "model": "V6",
