@@ -7,16 +7,44 @@ SUNO_API_KEY = os.getenv("SUNO_API_KEY")
 SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
+
 DEFAULT_STYLE = (
-    "Vocal song with instrumental accompaniment. "
-    "The lead vocal from the first uploaded audio must "
-    "be clearly audible throughout the song. "
-    "Use the second uploaded audio as backing music. "
-    "Keep the original vocal melody, rhythm and phrasing. "
-    "Do not produce an instrumental-only track. "
-    "No backing singers, choir or additional vocal layers. "
-    "Balanced professional studio mix."
+    "Original vocal preservation, faithful vocal performance, "
+    "professional studio mix with instrumental accompaniment. "
+
+    "The first uploaded audio contains the ORIGINAL lead vocal. "
+    "Treat this vocal recording as the primary performance "
+    "and preserve it as faithfully as possible. "
+
+    "Retain the singer's original vocal timbre, unique voice "
+    "character, tone, natural texture, resonance, articulation, "
+    "pronunciation, accent, breaths, vibrato and emotional expression. "
+
+    "Preserve every original sung word exactly as performed. "
+    "Do not rewrite, replace, omit, repeat or invent lyrics. "
+    "Follow the original vocal recording for all words and phrasing. "
+
+    "Keep the exact original melody, pitch contour, note durations, "
+    "rhythm, tempo variations, pauses and vocal entrances. "
+    "Avoid pitch correction, time stretching, vocal regeneration "
+    "or any unnecessary changes to the lead vocal. "
+
+    "The second uploaded audio is the INSTRUMENTAL ACCOMPANIMENT. "
+    "Use it as supportive backing music and adapt its arrangement "
+    "to the original vocal performance, not the other way around. "
+
+    "Keep the original lead vocal clearly audible and dominant "
+    "throughout the entire song. "
+    "Do not generate a new singer, backing vocals, harmonies, "
+    "choir, doubled vocals or additional vocal layers. "
+
+    "Produce a complete vocal song, NOT an instrumental-only track. "
+    "Blend the original vocal and instrumental into a cohesive, "
+    "balanced professional studio production. "
+    "Preserve the complete original vocal performance "
+    "and finish with a natural musical ending."
 )
+
 
 
 async def generate_mashup(
