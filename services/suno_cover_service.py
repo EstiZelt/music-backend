@@ -75,11 +75,10 @@ async def generate_upload_cover(
         "styleWeight": 0.5,
         "weirdnessConstraint": 0.0,
         "variety": 0,
-        "lyrics": lyrics,
     }
 
     if lyrics.strip():
-    payload["lyrics"] = lyrics.strip()
+        payload["lyrics"] = lyrics.strip()
     
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
