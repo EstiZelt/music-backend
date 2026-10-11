@@ -13,6 +13,11 @@ from services.suno_mashup_service import (
     get_mashup_details,
 )
 
+from services.suno_cover_service import (
+    generate_upload_cover,
+    get_cover_generation_details,
+)
+
 from services.alignment_service import analyze_alignment
 from services.timing_service import create_timing_test_mix
 
@@ -47,6 +52,9 @@ class MashupRequest(BaseModel):
     title: str = "My Mashup"
     lyrics: str | None = None
 
+class UploadCoverRequest(BaseModel):
+    upload_url: str
+    title: str = "My Song"
 
 @app.get("/")
 def health():
@@ -162,4 +170,40 @@ async def mashup_details(task_id: str):
         raise HTTPException(
             status_code=502,
             detail=e.response.text
+        )
+
+@app.post("/upload-cover")
+async def upload_cover_endpoint(
+    request: UploadCoverRequest
+):
+    try:
+        result = await generate_upload_cover(
+            upload_url=request.upload_url,
+            title=request.title,
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+@app.get("/cover-generation-details/{task_id}")
+async def cover_generation_details_endpoint(
+    task_id: str
+):
+    try:
+        result = await get_cover_generation_details(
+            task_id=task_id
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
         )
