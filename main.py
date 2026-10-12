@@ -39,6 +39,14 @@ app.add_middleware(
 class InstrumentalRequest(BaseModel):
     upload_url: str
     title: str = "POC Song"
+    tags: str = Field(
+        default="",
+        description="Positive style prompt for Suno"
+    )
+    negative_tags: str = Field(
+        default="",
+        description="Elements Suno should avoid"
+    )
     lyrics: str | None = Field(
         default=None,
         max_length=5000,
@@ -76,6 +84,8 @@ async def create_instrumental(request: InstrumentalRequest):
         result = await add_instrumental(
             upload_url=request.upload_url,
             title=request.title,
+            tags=request.tags,
+            negative_tags=request.negative_tags,
             lyrics=request.lyrics,
 
         )
