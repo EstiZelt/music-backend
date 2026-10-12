@@ -37,8 +37,10 @@ DEFAULT_NEGATIVE_TAGS = (
 async def add_instrumental(
     upload_url: str,
     title: str = "My Song",
-    tags: str = DEFAULT_TAGS,
-    negative_tags: str = DEFAULT_NEGATIVE_TAGS,
+#    tags: str = DEFAULT_TAGS,
+#    negative_tags: str = DEFAULT_NEGATIVE_TAGS,
+    tags: str = "",
+    negative_tags: str = "",
     lyrics: str | None = None,
 ):
     if not SUNO_API_KEY:
