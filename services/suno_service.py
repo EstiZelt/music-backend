@@ -8,39 +8,36 @@ SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
 DEFAULT_TAGS = (
-    "Professional studio production using the original lead vocal. "
-    "Preserve the singer's exact vocal timbre, identity, melody, "
-    "phrasing, timing, breaths and emotion. "
-    "Apply gentle, natural pitch correction without changing the voice. "
-    "Add rich piano, warm strings, soft bass and subtle drums. "
-    "Follow the vocal closely with supportive harmonies, no competing melodies. "
-    "Professional vocal mix, EQ, compression, reverb and mastering. "
-    "Deliver the complete song with original vocals and a natural ending."
+    "Professional studio song production based on the uploaded vocal performance. "
+    "PRIMARY GOAL: retain the recognizable original singer, natural vocal timbre, "
+    "accent, pronunciation, exact lyrics, melody and phrasing. "
+    "Keep the original lead vocal as the sole singer, without re-singing or changing words. "
+    "Clean and polished vocal sound with gentle noise reduction, transparent EQ "
+    "and natural compression. "
+    "Create a complete, clearly audible, moderately rich instrumental arrangement "
+    "with piano, warm strings, bass and steady rhythmic drums. "
+    "Instruments must support the vocal throughout the song, with balanced volume "
+    "and no competing melodies. "
+    "Maintain natural vocal expression, consistent accompaniment, clear intelligible "
+    "words, professional mixing and a smooth musical ending."
 )
-
 
 
 DEFAULT_NEGATIVE_TAGS = (
-    "instrumental only, missing vocals, replacement singer, "
-    "altered voice, synthetic vocals, re-sung vocals, "
-    "heavy autotune, robotic pitch correction, "
-    "backing vocals, choir, vocal harmonies, doubled vocals, "
-    "vocal ad-libs, changed melody, changed phrasing, "
-    "missing phrases, competing instrumental solos, "
-    "instruments doubling the vocal melody, "
-    "overpowering drums, distorted vocals, "
-    "abrupt ending, truncated ending"
+    "replacement singer, synthetic vocals, altered vocal identity, "
+    "changed timbre, wrong pronunciation, changed lyrics, missing words, "
+    "re-singing, heavy autotune, choir, backing vocals, vocal harmonies, "
+    "doubled vocals, second singer, instrumental only, weak accompaniment, "
+    "sparse arrangement, excessive orchestration, loud instruments, "
+    "background noise, hiss, distortion, muddy mix, abrupt ending, cut vocals"
 )
-
 
 
 async def add_instrumental(
     upload_url: str,
     title: str = "My Song",
-#    tags: str = DEFAULT_TAGS,
-#    negative_tags: str = DEFAULT_NEGATIVE_TAGS,
-    tags: str = "",
-    negative_tags: str = "",
+    tags: str = DEFAULT_TAGS,
+    negative_tags: str = DEFAULT_NEGATIVE_TAGS,
     lyrics: str | None = None,
 ):
     if not SUNO_API_KEY:
