@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 from services.suno_service import (
     add_instrumental,
     get_generation_details,
+    DEFAULT_TAGS,
+    DEFAULT_NEGATIVE_TAGS,
 )
 
 from services.suno_mashup_service import (
@@ -36,23 +38,28 @@ app.add_middleware(
 )
 
 
+
 class InstrumentalRequest(BaseModel):
     upload_url: str
+
     title: str = "POC Song"
+
     tags: str = Field(
-        default="",
+        default=DEFAULT_TAGS,
         description="Positive style prompt for Suno"
     )
+
     negative_tags: str = Field(
-        default="",
+        default=DEFAULT_NEGATIVE_TAGS,
+        max_length=500,
         description="Elements Suno should avoid"
     )
+
     lyrics: str | None = Field(
         default=None,
         max_length=5000,
         description="Optional song lyrics",
     )
-
 
 class AlignmentRequest(BaseModel):
     vocal_url: str
