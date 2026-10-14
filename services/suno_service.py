@@ -10,6 +10,10 @@ SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
 DEFAULT_TAGS = (
+    
+    "OUTPUT MUST BE A COMPLETE SONG WITH THE ORIGINAL LEAD VOCAL "
+    "AUDIBLE FROM BEGINNING TO END. NEVER OUTPUT INSTRUMENTAL ONLY. "
+    "Instrumental backing must be ADDED TO the vocal, not replace it. "
     "ABSOLUTE PRIORITY: Preserve the EXACT original recorded lead vocal audio. "
     "NEVER regenerate, imitate, replace or re-sing it. Treat vocals as a LOCKED, "
     "IMMUTABLE track. Preserve exact identity, timbre, formants, pitch, vibrato, "
