@@ -7,30 +7,33 @@ SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
 
-DEFAULT_TAGS = (
-    "Professional studio song production based on the uploaded vocal performance. "
-    "PRIMARY GOAL: retain the recognizable original singer, natural vocal timbre, "
-    "accent, pronunciation, exact lyrics, melody and phrasing. "
-    "Keep the original lead vocal as the sole singer, without re-singing or changing words. "
-    "Clean and polished vocal sound with gentle noise reduction, transparent EQ "
-    "and natural compression. "
-    "Create a complete, clearly audible, moderately rich instrumental arrangement "
-    "with piano, warm strings, bass and steady rhythmic drums. "
-    "Instruments must support the vocal throughout the song, with balanced volume "
-    "and no competing melodies. "
-    "Maintain natural vocal expression, consistent accompaniment, clear intelligible "
-    "words, professional mixing and a smooth musical ending."
-)
 
+DEFAULT_TAGS = (
+    "INSTRUMENTAL ACCOMPANIMENT FOR THE UPLOADED ORIGINAL VOCAL. "
+    "The uploaded lead vocal is the final, authentic performance. "
+    "Preserve its exact original voice, timbre, formants, accent, "
+    "pronunciation, lyrics, melody, timing, phrasing and breaths. "
+    "Do not regenerate, replace, imitate, re-sing or transform the voice. "
+    "Only subtle transparent EQ, noise reduction and compression if needed. "
+    "Create rich professional piano, warm strings, bass and rhythmic drums "
+    "around the existing vocal. Follow every vocal phrase and pause. "
+    "ONE SOLO LEAD VOICE ONLY. Absolutely no additional human or AI voices. "
+    "No choir, backing singers, harmonies or vocal doubling. "
+    "Keep the original vocal clear and dominant from start to finish. "
+    "Professional instrumental arrangement, balanced mix and natural ending."
+)
 
 DEFAULT_NEGATIVE_TAGS = (
-    "replacement singer, synthetic vocals, altered vocal identity, "
-    "changed timbre, wrong pronunciation, changed lyrics, missing words, "
-    "re-singing, heavy autotune, choir, backing vocals, vocal harmonies, "
-    "doubled vocals, second singer, instrumental only, weak accompaniment, "
-    "sparse arrangement, excessive orchestration, loud instruments, "
-    "background noise, hiss, distortion, muddy mix, abrupt ending, cut vocals"
+    "replacement singer, regenerated voice, synthetic vocals, "
+    "altered timbre, altered formants, changed lyrics, re-singing, "
+    "autotune, robotic vocals, choir, chorus voices, group singing, "
+    "backing vocals, background singers, vocal harmonies, "
+    "doubled vocals, layered vocals, second singer, "
+    "vocal ad-libs, call and response, missing words, "
+    "changed melody, instrumental only, distorted vocals, "
+    "cut vocals, truncated ending"
 )
+
 
 
 async def add_instrumental(
