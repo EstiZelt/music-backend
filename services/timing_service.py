@@ -1,4 +1,6 @@
-import io
+
+import gc
+import os
 import tempfile
 
 import httpx
@@ -7,187 +9,281 @@ import numpy as np
 import soundfile as sf
 
 
+MIX_SAMPLE_RATE = 22050
 
-async def _download_audio(url: str):
-    async with httpx.AsyncClient(
-        timeout=120.0,
-        follow_redirects=True,
-    ) as client:
-        response = await client.get(url)
+VOCAL_GAIN = 1.0
+INSTRUMENTAL_GAIN = 0.45
+MASTER_GAIN = 0.65
 
-    response.raise_for_status()
-
-    audio_bytes = io.BytesIO(response.content)
-
-    y, sr = librosa.load(
-        audio_bytes,
-        sr=None,
-        mono=True,
-    )
-
-    return y.astype(np.float32), sr
+CHUNK_SECONDS = 5
 
 
-def _resample_if_needed(y, sr, target_sr):
-    if sr == target_sr:
-        return y
-
-    return librosa.resample(
-        y,
-        orig_sr=sr,
-        target_sr=target_sr,
-    ).astype(np.float32)
-
-
-def _shift_audio(y, sr, shift_seconds):
+async def _download_audio_preview(
+    url: str,
+    max_duration_seconds: float,
+):
     """
-    Shift the vocal in time WITHOUT pitch shifting
-    and WITHOUT time stretching.
+    Download audio and decode only the preview section.
 
-    Positive shift_seconds:
-        vocal is moved later.
-
-    Negative shift_seconds:
-        vocal is moved earlier.
+    The original remote file is not modified.
+    The diagnostic copy is mono at 22050 Hz.
     """
 
-    samples = int(
-        round(abs(shift_seconds) * sr)
-    )
+    temp_source_path = None
 
-    if samples == 0:
-        return y.copy()
+    try:
+        async with httpx.AsyncClient(
+            timeout=120.0,
+            follow_redirects=True,
+        ) as client:
 
-    if shift_seconds > 0:
-        # Move vocal later by adding silence at start.
-        return np.concatenate(
-            [
-                np.zeros(samples, dtype=np.float32),
-                y,
-            ]
+            async with client.stream(
+                "GET",
+                url,
+            ) as response:
+
+                response.raise_for_status()
+
+                with tempfile.NamedTemporaryFile(
+                    suffix=".mp3",
+                    delete=False,
+                ) as temp_file:
+
+                    temp_source_path = temp_file.name
+
+                    async for chunk in response.aiter_bytes():
+                        temp_file.write(chunk)
+
+        audio, sr = librosa.load(
+            temp_source_path,
+            sr=MIX_SAMPLE_RATE,
+            mono=True,
+            duration=max_duration_seconds,
+            dtype=np.float32,
         )
 
-    # Move vocal earlier by removing audio from the beginning.
-    # This is used only for this diagnostic POC.
-    if samples >= len(y):
-        return np.zeros_like(y)
+        if len(audio) == 0:
+            raise ValueError(
+                "Downloaded audio is empty."
+            )
 
-    return y[samples:]
+        return audio, sr
+
+    finally:
+        if (
+            temp_source_path
+            and os.path.exists(temp_source_path)
+        ):
+            os.unlink(temp_source_path)
 
 
-def _normalize_for_mix(y):
-    peak = np.max(np.abs(y))
+def _get_chunk(
+    audio,
+    start,
+    end,
+):
+    """
+    Read a fixed-size section.
 
-    if peak > 0.98:
-        y = y / peak * 0.98
+    Missing samples are filled with silence.
+    """
 
-    return y.astype(np.float32)
+    chunk_length = end - start
+
+    if end <= 0 or start >= len(audio):
+        return np.zeros(
+            chunk_length,
+            dtype=np.float32,
+        )
+
+    safe_start = max(0, start)
+    safe_end = min(len(audio), end)
+
+    chunk = audio[safe_start:safe_end]
+
+    result = np.zeros(
+        chunk_length,
+        dtype=np.float32,
+    )
+
+    destination_start = safe_start - start
+
+    result[
+        destination_start:
+        destination_start + len(chunk)
+    ] = chunk
+
+    return result
 
 
 async def create_timing_test_mix(
     vocal_url: str,
     instrumental_url: str,
+    instrumental_delay_seconds: float = 0.0,
+    preview_duration_seconds: float = 30.0,
 ):
     """
-    POC ONLY.
+    Create a short timing test mix.
 
-    Creates a test mix while preserving the original vocal waveform.
+    - Vocal always starts at time zero.
+    - Instrumental starts after the chosen delay.
+    - No pitch correction.
+    - No time stretching.
+    - No vocal synthesis.
+    - No vocal samples removed from the beginning.
 
-    IMPORTANT:
-    - no pitch correction
-    - no time stretching
-    - no voice synthesis
-    - no timbre transformation
-
-    For this first test we apply only the robust global timing offset
-    observed in our alignment analysis.
-
-    We intentionally do NOT use the suspicious local DTW jumps.
+    Diagnostic preview only.
     """
 
-    vocal, vocal_sr = await _download_audio(
-        vocal_url
-    )
-
-    instrumental, instrumental_sr = (
-        await _download_audio(
-            instrumental_url
+    if not 0 <= instrumental_delay_seconds <= 15:
+        raise ValueError(
+            "Instrumental delay must be 0-15 seconds."
         )
-    )
 
-    # Use the instrumental sample rate for the mix.
-    vocal = _resample_if_needed(
-        vocal,
-        vocal_sr,
-        instrumental_sr,
-    )
+    if not 5 <= preview_duration_seconds <= 180:
+        raise ValueError(
+            "Preview duration must be 5-180 seconds."
+        )
 
-    sr = instrumental_sr
+    sr = MIX_SAMPLE_RATE
 
-    # From our reliable alignment analysis:
-    # median shift = -0.372 seconds.
-    #
-    # The instrumental target occurs about 0.372 sec earlier,
-    # therefore move the vocal earlier by that amount.
-    timing_shift_seconds = -0.372
+    vocal = None
+    instrumental = None
+    temp_path = None
 
-    shifted_vocal = _shift_audio(
-        vocal,
-        sr,
-        timing_shift_seconds,
-    )
+    try:
+        vocal, vocal_sr = await _download_audio_preview(
+            vocal_url,
+            preview_duration_seconds,
+        )
 
-    # Make both tracks the same length.
-    target_length = max(
-        len(shifted_vocal),
-        len(instrumental),
-    )
+        # Only this much instrumental audio can
+        # appear inside the requested preview.
+        instrumental_duration = max(
+            0.0,
+            preview_duration_seconds
+            - instrumental_delay_seconds,
+        )
 
-    if len(shifted_vocal) < target_length:
-        shifted_vocal = np.pad(
-            shifted_vocal,
-            (
+        if instrumental_duration > 0:
+            instrumental, instrumental_sr = (
+                await _download_audio_preview(
+                    instrumental_url,
+                    instrumental_duration,
+                )
+            )
+
+            if instrumental_sr != sr:
+                raise ValueError(
+                    "Unexpected instrumental sample rate."
+                )
+
+        else:
+            instrumental = np.zeros(
                 0,
-                target_length - len(shifted_vocal),
-            ),
+                dtype=np.float32,
+            )
+
+        if vocal_sr != sr:
+            raise ValueError(
+                "Unexpected vocal sample rate."
+            )
+
+        delay_samples = int(
+            round(
+                instrumental_delay_seconds * sr
+            )
         )
 
-    if len(instrumental) < target_length:
-        instrumental = np.pad(
-            instrumental,
-            (
+        target_length = int(
+            round(
+                preview_duration_seconds * sr
+            )
+        )
+
+        chunk_samples = int(
+            CHUNK_SECONDS * sr
+        )
+
+        with tempfile.NamedTemporaryFile(
+            suffix=".wav",
+            delete=False,
+        ) as temp_file:
+            temp_path = temp_file.name
+
+        with sf.SoundFile(
+            temp_path,
+            mode="w",
+            samplerate=sr,
+            channels=1,
+            subtype="PCM_16",
+            format="WAV",
+        ) as output_file:
+
+            for start in range(
                 0,
-                target_length - len(instrumental),
+                target_length,
+                chunk_samples,
+            ):
+                end = min(
+                    start + chunk_samples,
+                    target_length,
+                )
+
+                vocal_chunk = _get_chunk(
+                    vocal,
+                    start,
+                    end,
+                )
+
+                # Convert output positions into
+                # instrumental source positions.
+                instrumental_start = (
+                    start - delay_samples
+                )
+
+                instrumental_end = (
+                    end - delay_samples
+                )
+
+                instrumental_chunk = _get_chunk(
+                    instrumental,
+                    instrumental_start,
+                    instrumental_end,
+                )
+
+                mixed_chunk = (
+                    vocal_chunk * VOCAL_GAIN
+                    + instrumental_chunk * INSTRUMENTAL_GAIN
+                )
+
+                mixed_chunk *= MASTER_GAIN
+
+                np.clip(
+                    mixed_chunk,
+                    -1.0,
+                    1.0,
+                    out=mixed_chunk,
+                )
+
+                output_file.write(mixed_chunk)
+
+        return {
+            "file_path": temp_path,
+            "sample_rate": sr,
+            "instrumental_delay_seconds": (
+                instrumental_delay_seconds
             ),
-        )
+            "preview_duration_seconds": (
+                preview_duration_seconds
+            ),
+        }
 
-    # Keep vocal clearly dominant for evaluation.
-    vocal_gain = 1.0
-    instrumental_gain = 0.45
+    except Exception:
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
+        raise
 
-    mix = (
-        shifted_vocal * vocal_gain
-        + instrumental * instrumental_gain
-    )
-
-    mix = _normalize_for_mix(mix)
-
-    temp_file = tempfile.NamedTemporaryFile(
-        suffix=".wav",
-        delete=False,
-    )
-
-    temp_file.close()
-
-    sf.write(
-        temp_file.name,
-        mix,
-        sr,
-        subtype="PCM_16",
-    )
-
-    return {
-        "file_path": temp_file.name,
-        "sample_rate": sr,
-        "timing_shift_seconds": timing_shift_seconds,
-    }
+    finally:
+        del vocal, instrumental
+        gc.collect()

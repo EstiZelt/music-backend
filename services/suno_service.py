@@ -112,3 +112,53 @@ async def get_generation_details(task_id: str):
 
     response.raise_for_status()
     return response.json()
+
+async def upload_cover(
+    upload_url: str,
+    title: str = "My Song Cover",
+    style: str = (
+        "Professional studio instrumental accompaniment, "
+        "warm piano, expressive strings, gentle rhythmic drums, "
+        "faithful to the uploaded melody and musical phrasing, "
+        "preserve the original song structure and natural timing, "
+        "supportive arrangement with no competing lead melody"
+    ),
+):
+    if not SUNO_API_KEY:
+        raise RuntimeError("SUNO_API_KEY is not configured")
+
+    url = f"{SUNO_BASE_URL}/api/v1/generate/upload-cover"
+
+    headers = {
+        "Authorization": f"Bearer {SUNO_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "uploadUrl": upload_url,
+        "title": title,
+        "style": style,
+        "negativeTags": (
+            "vocals, lead singer, backing vocals, choir, "
+            "vocal harmonies, second voice, doubled vocals, "
+            "busy countermelody, instruments doubling the vocal melody, "
+            "heavy drums, truncated ending"
+        ),
+        "instrumental": True,
+        "model": "V6",
+        "callBackUrl": "https://example.com/callback",
+        "audioWeight": 1.0,
+        "styleWeight": 0.5,
+        "weirdnessConstraint": 0.0,
+        "variety": 0,
+    }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            url,
+            headers=headers,
+            json=payload,
+        )
+
+    response.raise_for_status()
+    return response.json()
