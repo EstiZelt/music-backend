@@ -9,24 +9,24 @@ SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
 
+
 DEFAULT_TAGS = (
-    
-    "OUTPUT MUST BE A COMPLETE SONG WITH THE ORIGINAL LEAD VOCAL "
-    "AUDIBLE FROM BEGINNING TO END. NEVER OUTPUT INSTRUMENTAL ONLY. "
-    "Instrumental backing must be ADDED TO the vocal, not replace it. "
-    "ABSOLUTE PRIORITY: Preserve the EXACT original recorded lead vocal audio. "
-    "NEVER regenerate, imitate, replace or re-sing it. Treat vocals as a LOCKED, "
-    "IMMUTABLE track. Preserve exact identity, timbre, formants, pitch, vibrato, "
-    "breaths, timing, phrasing and emotion. STRICT PHONETIC FIDELITY: Preserve "
-    "EVERY consonant, vowel, syllable, word ending, stress, accent and pronunciation "
-    "EXACTLY as recorded. Never correct, omit, add or change any vocal sound. "
+    "ABSOLUTE PRIORITY: Preserve the EXACT original recorded lead vocal. "
+    "NEVER regenerate, replace, imitate or re-sing it. "
+    "Treat the original vocal as a LOCKED, IMMUTABLE audio track. "
+    "Preserve exact vocal identity, timbre, formants, pitch, vibrato, "
+    "breaths, timing, phrasing and emotion. STRICT PHONETIC FIDELITY: "
+    "Preserve every consonant, vowel, syllable, word, ending, stress, "
+    "accent and pronunciation EXACTLY as recorded. "
+    "Never change, correct, add or omit any vocal sound. "
+    "ONE ORIGINAL SINGER ONLY. Absolutely NO choir, backing vocals, "
+    "harmonies, doubling, layering or additional voices. "
+    "Preserve EVERY sung phrase from beginning to end. "
+    "Never replace vocals with instrumental music. "
     "No vocal processing except minimal transparent noise removal. "
-    "ONE ORIGINAL SINGER ONLY: NO choir, backing vocals, harmonies, doubling, "
-    "layering or extra voices. Preserve ALL original vocal phrases from first "
-    "to last. NEVER replace singing with instrumental music. Vocal fidelity "
-    "overrides production quality. Add rich piano, warm strings, bass and "
-    "steady drums ONLY as backing. Keep vocals untouched and dominant. "
-    "Smooth instrumental ending."
+    "Add rich piano, warm strings, bass and steady drums ONLY as backing. "
+    "Keep the original vocal clear, dominant and untouched. "
+    "Finish with a smooth instrumental ending."
 )
 
 DEFAULT_NEGATIVE_TAGS = (
