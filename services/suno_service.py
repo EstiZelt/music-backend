@@ -6,40 +6,48 @@ SUNO_API_KEY = os.getenv("SUNO_API_KEY")
 SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
+
+DEFAULT_TAGS = (
+    "Professional studio song production based on the uploaded vocal performance. "
+    "PRIMARY GOAL: retain the recognizable original singer, natural vocal timbre, "
+    "accent, pronunciation, exact lyrics, melody and phrasing. "
+    "Keep the original lead vocal as the sole singer, without re-singing or changing words. "
+    "Clean and polished vocal sound with gentle noise reduction, transparent EQ "
+    "and natural compression. "
+    "Create a complete, clearly audible, moderately rich instrumental arrangement "
+    "with piano, warm strings, bass and steady rhythmic drums. "
+    "Instruments must support the vocal throughout the song, with balanced volume "
+    "and no competing melodies. "
+    "Maintain natural vocal expression, consistent accompaniment, clear intelligible "
+    "words, professional mixing and a smooth musical ending."
+)
+
+
+DEFAULT_NEGATIVE_TAGS = (
+    "replacement singer, synthetic vocals, altered vocal identity, "
+    "changed timbre, wrong pronunciation, changed lyrics, missing words, "
+    "re-singing, heavy autotune, choir, backing vocals, vocal harmonies, "
+    "doubled vocals, second singer, instrumental only, weak accompaniment, "
+    "sparse arrangement, excessive orchestration, loud instruments, "
+    "background noise, hiss, distortion, muddy mix, abrupt ending, cut vocals"
+)
+
+
 async def add_instrumental(
     upload_url: str,
     title: str = "My Song",
-    tags: str = (
-        "professional studio accompaniment, "
-        "supportive clean arrangement, "
-        "piano, warm strings, subtle drums, "
-        "follow the original melody, rhythm and phrasing accurately, "
-        "leave musical space for the lead vocal, "
-        "use the complete uploaded melody from beginning to end, "
-        "preserve every musical phrase, "
-        "do not omit or shorten any phrase, "
-        "do not end the arrangement before the original melody is complete, "
-        "follow the full structure of the uploaded audio"
-    ),
-    negative_tags: str = (
-        "lead melody doubling, "
-        "instrumental melody copying the vocal, "
-        "busy countermelody, "
-        "dense orchestration, "
-        "solo instruments competing with the vocal, "
-        "choir, backing vocals, background vocals, vocal harmonies, "
-        "second voice, doubled vocals, layered vocals, "
-        "call and response, vocal ad-libs, "
-        "heavy drums, heavy metal, distorted vocals, "
-        "truncated ending, "
-        "early ending, "
-        "omitted phrases, "
-        "shortened structure, "
-        "missing melody sections"
-    ),
+    tags: str = DEFAULT_TAGS,
+    negative_tags: str = DEFAULT_NEGATIVE_TAGS,
+    lyrics: str | None = None,
 ):
     if not SUNO_API_KEY:
         raise RuntimeError("SUNO_API_KEY is not configured")
+
+    if len(negative_tags) > 500:
+        raise ValueError(
+            f"negative_tags exceeds Suno limit: "
+            f"{len(negative_tags)}/500 characters"
+        )
 
     url = f"{SUNO_BASE_URL}/api/v1/generate/add-instrumental"
 
@@ -53,26 +61,23 @@ async def add_instrumental(
         "title": title,
         "tags": tags,
         "negativeTags": negative_tags,
-
-        # זמני בשלב ה-POC.
-        # בהמשך נחליף ל-callback endpoint אמיתי אצלנו.
         "callBackUrl": "https://example.com/callback",
 
         "model": "V6",
-
-        # שומרים על הנאמנות הגבוהה למקור
         "audioWeight": 1.0,
-
-        # בניסוי הקודם 0.5 נתן תוצאה מדויקת ומסודרת יותר
-        "styleWeight": 0.5,
-
-        # כרגע לא מוסיפים יצירתיות חריגה
+        "styleWeight": 0.1,
         "weirdnessConstraint": 0.0,
-
-        # כרגע משאירים קבוע כדי לא לשנות כמה משתנים יחד
         "variety": 0,
     }
 
+    if lyrics and lyrics.strip():
+        if len(lyrics) > 5000:
+            raise ValueError(
+                "lyrics exceeds Suno V6 limit: 5000 characters"
+            )
+        payload["lyrics"] = lyrics
+
+    
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
             url,

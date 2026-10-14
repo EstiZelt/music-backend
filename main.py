@@ -6,10 +6,23 @@ from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
 
 import os
+import httpx
 
 from services.suno_service import (
     add_instrumental,
     get_generation_details,
+    DEFAULT_TAGS,
+    DEFAULT_NEGATIVE_TAGS,
+)
+
+from services.suno_mashup_service import (
+    generate_mashup,
+    get_mashup_details,
+)
+
+from services.suno_cover_service import (
+    generate_upload_cover,
+    get_cover_generation_details,
     upload_cover,
 )
 
@@ -31,10 +44,28 @@ app.add_middleware(
 )
 
 
+
 class InstrumentalRequest(BaseModel):
     upload_url: str
+
     title: str = "POC Song"
 
+    tags: str = Field(
+        default=DEFAULT_TAGS,
+        description="Positive style prompt for Suno"
+    )
+
+    negative_tags: str = Field(
+        default=DEFAULT_NEGATIVE_TAGS,
+        max_length=500,
+        description="Elements Suno should avoid"
+    )
+
+    lyrics: str | None = Field(
+        default=None,
+        max_length=5000,
+        description="Optional song lyrics",
+    )
 
 class CoverRequest(BaseModel):
     upload_url: str
@@ -53,6 +84,16 @@ class AlignmentRequest(BaseModel):
     instrumental_url: str
 
 
+class MashupRequest(BaseModel):
+    vocal_url: str
+    instrumental_url: str
+    title: str = "My Mashup"
+    lyrics: str | None = None
+
+class UploadCoverRequest(BaseModel):
+    upload_url: str
+    title: str = "My Song"
+    lyrics: str = ""
 class TimingMixRequest(BaseModel):
     vocal_url: str
     instrumental_url: str
@@ -91,6 +132,10 @@ async def create_instrumental(request: InstrumentalRequest):
         result = await add_instrumental(
             upload_url=request.upload_url,
             title=request.title,
+            tags=request.tags,
+            negative_tags=request.negative_tags,
+            lyrics=request.lyrics,
+
         )
 
         return {
@@ -191,4 +236,70 @@ async def test_timing_mix(request: TimingMixRequest):
         raise HTTPException(
             status_code=500,
             detail=str(e),
+        )
+
+@app.post("/mashup")
+async def create_mashup(request: MashupRequest):
+    try:
+        return await generate_mashup(
+            vocal_url=request.vocal_url,
+            instrumental_url=request.instrumental_url,
+            title=request.title,
+            lyrics=request.lyrics,
+        )
+    except (ValueError, RuntimeError) as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=e.response.text
+        )
+
+
+@app.get("/mashup-details/{task_id}")
+async def mashup_details(task_id: str):
+    try:
+        return await get_mashup_details(task_id)
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=e.response.text
+        )
+
+@app.post("/upload-cover")
+async def upload_cover_endpoint(
+    request: UploadCoverRequest
+):
+    try:
+        result = await generate_upload_cover(
+            upload_url=request.upload_url,
+            title=request.title,
+            lyrics=request.lyrics,
+        )
+        return result
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+@app.get("/cover-generation-details/{task_id}")
+async def cover_generation_details_endpoint(
+    task_id: str
+):
+    try:
+        result = await get_cover_generation_details(
+            task_id=task_id
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
         )
