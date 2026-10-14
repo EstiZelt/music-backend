@@ -23,7 +23,6 @@ from services.suno_mashup_service import (
 from services.suno_cover_service import (
     generate_upload_cover,
     get_cover_generation_details,
-    upload_cover,
 )
 
 from services.alignment_service import analyze_alignment
@@ -32,7 +31,7 @@ from services.timing_service import create_timing_test_mix
 
 app = FastAPI(
     title="Music Backend",
-    version="2.2.0",
+    version="2.2.1",
 )
 
 app.add_middleware(
@@ -44,6 +43,9 @@ app.add_middleware(
 )
 
 
+# =====================================
+# REQUEST MODELS
+# =====================================
 
 class InstrumentalRequest(BaseModel):
     upload_url: str
@@ -52,13 +54,13 @@ class InstrumentalRequest(BaseModel):
 
     tags: str = Field(
         default=DEFAULT_TAGS,
-        description="Positive style prompt for Suno"
+        description="Positive style prompt for Suno",
     )
 
     negative_tags: str = Field(
         default=DEFAULT_NEGATIVE_TAGS,
         max_length=500,
-        description="Elements Suno should avoid"
+        description="Elements Suno should avoid",
     )
 
     lyrics: str | None = Field(
@@ -67,9 +69,11 @@ class InstrumentalRequest(BaseModel):
         description="Optional song lyrics",
     )
 
+
 class CoverRequest(BaseModel):
     upload_url: str
     title: str = "POC Cover"
+
     style: str = (
         "Professional studio instrumental accompaniment, "
         "warm piano, expressive strings, gentle rhythmic drums, "
@@ -90,10 +94,13 @@ class MashupRequest(BaseModel):
     title: str = "My Mashup"
     lyrics: str | None = None
 
+
 class UploadCoverRequest(BaseModel):
     upload_url: str
     title: str = "My Song"
     lyrics: str = ""
+
+
 class TimingMixRequest(BaseModel):
     vocal_url: str
     instrumental_url: str
@@ -118,6 +125,10 @@ class TimingMixRequest(BaseModel):
     )
 
 
+# =====================================
+# HEALTH CHECK
+# =====================================
+
 @app.get("/")
 def health():
     return {
@@ -126,8 +137,14 @@ def health():
     }
 
 
+# =====================================
+# ADD INSTRUMENTAL
+# =====================================
+
 @app.post("/add-instrumental")
-async def create_instrumental(request: InstrumentalRequest):
+async def create_instrumental(
+    request: InstrumentalRequest
+):
     try:
         result = await add_instrumental(
             upload_url=request.upload_url,
@@ -135,7 +152,6 @@ async def create_instrumental(request: InstrumentalRequest):
             tags=request.tags,
             negative_tags=request.negative_tags,
             lyrics=request.lyrics,
-
         )
 
         return {
@@ -149,14 +165,19 @@ async def create_instrumental(request: InstrumentalRequest):
             detail=str(e),
         )
 
+
+# =====================================
+# COVER
+# =====================================
 
 @app.post("/cover")
-async def create_cover(request: CoverRequest):
+async def create_cover(
+    request: CoverRequest
+):
     try:
-        result = await upload_cover(
+        result = await generate_upload_cover(
             upload_url=request.upload_url,
             title=request.title,
-            style=request.style,
         )
 
         return {
@@ -170,11 +191,17 @@ async def create_cover(request: CoverRequest):
             detail=str(e),
         )
 
+
+# =====================================
+# SONG STATUS
+# =====================================
 
 @app.get("/song-status/{task_id}")
 async def song_status(task_id: str):
     try:
-        result = await get_generation_details(task_id)
+        result = await get_generation_details(
+            task_id
+        )
 
         return {
             "success": True,
@@ -188,8 +215,14 @@ async def song_status(task_id: str):
         )
 
 
+# =====================================
+# ALIGNMENT ANALYSIS
+# =====================================
+
 @app.post("/analyze-alignment")
-async def alignment_analysis(request: AlignmentRequest):
+async def alignment_analysis(
+    request: AlignmentRequest
+):
     try:
         result = await analyze_alignment(
             vocal_url=request.vocal_url,
@@ -208,8 +241,14 @@ async def alignment_analysis(request: AlignmentRequest):
         )
 
 
+# =====================================
+# TIMING MIX
+# =====================================
+
 @app.post("/test-timing-mix")
-async def test_timing_mix(request: TimingMixRequest):
+async def test_timing_mix(
+    request: TimingMixRequest
+):
     try:
         result = await create_timing_test_mix(
             vocal_url=request.vocal_url,
@@ -238,8 +277,15 @@ async def test_timing_mix(request: TimingMixRequest):
             detail=str(e),
         )
 
+
+# =====================================
+# MASHUP
+# =====================================
+
 @app.post("/mashup")
-async def create_mashup(request: MashupRequest):
+async def create_mashup(
+    request: MashupRequest
+):
     try:
         return await generate_mashup(
             vocal_url=request.vocal_url,
@@ -247,27 +293,37 @@ async def create_mashup(request: MashupRequest):
             title=request.title,
             lyrics=request.lyrics,
         )
+
     except (ValueError, RuntimeError) as e:
         raise HTTPException(
             status_code=400,
-            detail=str(e)
+            detail=str(e),
         )
+
     except httpx.HTTPStatusError as e:
         raise HTTPException(
             status_code=502,
-            detail=e.response.text
+            detail=e.response.text,
         )
 
 
 @app.get("/mashup-details/{task_id}")
 async def mashup_details(task_id: str):
     try:
-        return await get_mashup_details(task_id)
+        return await get_mashup_details(
+            task_id
+        )
+
     except httpx.HTTPStatusError as e:
         raise HTTPException(
             status_code=502,
-            detail=e.response.text
+            detail=e.response.text,
         )
+
+
+# =====================================
+# UPLOAD COVER
+# =====================================
 
 @app.post("/upload-cover")
 async def upload_cover_endpoint(
@@ -279,13 +335,15 @@ async def upload_cover_endpoint(
             title=request.title,
             lyrics=request.lyrics,
         )
+
         return result
 
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=str(e)
+            detail=str(e),
         )
+
 
 @app.get("/cover-generation-details/{task_id}")
 async def cover_generation_details_endpoint(
@@ -301,5 +359,5 @@ async def cover_generation_details_endpoint(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=str(e)
+            detail=str(e),
         )
