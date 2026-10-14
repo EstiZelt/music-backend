@@ -10,23 +10,24 @@ SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
 
+
 DEFAULT_TAGS = (
-    "ABSOLUTE PRIORITY: Preserve the EXACT original recorded lead vocal. "
-    "NEVER regenerate, replace, imitate or re-sing it. "
-    "Treat the original vocal as a LOCKED, IMMUTABLE audio track. "
-    "Preserve exact vocal identity, timbre, formants, pitch, vibrato, "
-    "breaths, timing, phrasing and emotion. STRICT PHONETIC FIDELITY: "
-    "Preserve every consonant, vowel, syllable, word, ending, stress, "
-    "accent and pronunciation EXACTLY as recorded. "
-    "Never change, correct, add or omit any vocal sound. "
-    "ONE ORIGINAL SINGER ONLY. Absolutely NO choir, backing vocals, "
-    "harmonies, doubling, layering or additional voices. "
-    "Preserve EVERY sung phrase from beginning to end. "
-    "Never replace vocals with instrumental music. "
-    "No vocal processing except minimal transparent noise removal. "
-    "Add rich piano, warm strings, bass and steady drums ONLY as backing. "
-    "Keep the original vocal clear, dominant and untouched. "
-    "Finish with a smooth instrumental ending."
+    "FULL SONG WITH ORIGINAL VOCALS AND INSTRUMENTAL BACKING. "
+    "MANDATORY: The final audio MUST contain the original recorded "
+    "lead singer, clearly audible throughout the entire song. "
+    "NEVER produce an instrumental-only track. "
+    "Use the EXACT uploaded vocal recording, not a recreated voice. "
+    "Preserve vocal identity, timbre, formants, melody, pitch, "
+    "timing, breaths, phrasing and emotion. "
+    "STRICT PRONUNCIATION: Keep every original word, syllable, "
+    "consonant, vowel and accent exactly as sung. "
+    "Never replace, regenerate, correct, omit or re-sing vocals. "
+    "ONE SINGER ONLY. Absolutely NO choir, backing singers, "
+    "harmonies, doubled vocals or additional voices. "
+    "Keep every sung phrase from first to last without cuts. "
+    "Add rich piano, warm strings, bass and steady drums BEHIND "
+    "the original vocal. Keep the lead voice clear and dominant. "
+    "Professional balanced mix and smooth ending."
 )
 
 DEFAULT_NEGATIVE_TAGS = (
