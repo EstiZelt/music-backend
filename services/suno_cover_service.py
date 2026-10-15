@@ -118,6 +118,17 @@ async def get_cover_generation_details(task_id: str):
         "taskId": task_id
     }
 
+    async def upload_cover(
+    upload_url: str,
+    title: str = "POC Cover",
+    style: str = DEFAULT_COVER_STYLE,
+):
+    return await generate_upload_cover(
+        upload_url=upload_url,
+        title=title,
+        style=style,
+    )
+
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.get(
             url,
