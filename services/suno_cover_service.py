@@ -118,7 +118,7 @@ async def get_cover_generation_details(task_id: str):
         "taskId": task_id
     }
 
-    async def upload_cover(
+async def upload_cover(
     upload_url: str,
     title: str = "POC Cover",
     style: str = DEFAULT_COVER_STYLE,
