@@ -65,7 +65,7 @@ async def add_instrumental(
 
         "model": "V6",
         "audioWeight": 1.0,
-        "styleWeight": 0.5,
+        "styleWeight": 1.0,
         "weirdnessConstraint": 0.0,
         "variety": 0,
     }
