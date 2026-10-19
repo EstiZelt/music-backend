@@ -77,6 +77,19 @@ async def validate_voice(body: VoiceValidateRequest):
     return await _request("POST", "/api/v1/voice/validate", payload=body.model_dump(mode="json"))
 
 
+@router.get("/validate-info")
+async def voice_validate_info(
+    task_id: str = Query(
+        min_length=1,
+        description="Voice validation task ID"
+    )
+):
+    return await _request(
+        "GET",
+        "/api/v1/voice/validate-info",
+        params={"taskId": task_id}
+    )
+
 @router.post("/generate")
 async def generate_voice(body: VoiceGenerateRequest):
     return await _request("POST", "/api/v1/voice/generate", payload=body.model_dump(mode="json"))
