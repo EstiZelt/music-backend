@@ -1,49 +1,51 @@
-"""Suno Voice API integration (experimental; verify provider endpoint schemas).
+"""Experimental Voice endpoints against the existing apibox.erweima.ai account.
 
-Set SUNO_VOICE_API_KEY and optionally SUNO_VOICE_BASE_URL in Render.
-Only enroll a voice with the speaker's informed permission.
+Provider support for /api/v1/voice/* is NOT verified. Use only with
+explicit consent from the person whose voice is being enrolled.
 """
 import os
 from typing import Any, Literal
-
 import httpx
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field, HttpUrl
 
 router = APIRouter(prefix="/voice", tags=["Voice fingerprint (experimental)"])
-
-BASE_URL = os.getenv("SUNO_VOICE_BASE_URL", "https://api.sunoapi.org").rstrip("/")
+BASE_URL = os.getenv("SUNO_BASE_URL", "https://apibox.erweima.ai").rstrip("/")
 
 
 def _api_key() -> str:
-    key = os.getenv("SUNO_VOICE_API_KEY")
+    key = os.getenv("SUNO_API_KEY")
     if not key:
-        raise HTTPException(status_code=503, detail="SUNO_VOICE_API_KEY is not configured")
+        raise HTTPException(status_code=503, detail="SUNO_API_KEY is not configured")
     return key
 
 
-async def _request(method: str, path: str, *, payload: dict | None = None, params: dict | None = None) -> Any:
+async def _request(method: str, path: str, *, payload: dict | None = None,
+                   params: dict | None = None) -> Any:
     headers = {"Authorization": f"Bearer {_api_key()}", "Accept": "application/json"}
     if payload is not None:
         headers["Content-Type"] = "application/json"
     try:
         async with httpx.AsyncClient(timeout=60, follow_redirects=False) as client:
-            response = await client.request(method, f"{BASE_URL}{path}", headers=headers, json=payload, params=params)
+            response = await client.request(method, f"{BASE_URL}{path}",
+                                            headers=headers, json=payload, params=params)
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
-        # Avoid exposing tokens or request headers in error messages.
         try:
             provider_detail = exc.response.json()
         except ValueError:
             provider_detail = exc.response.text[:1000]
-        raise HTTPException(status_code=502, detail={"provider_status": exc.response.status_code, "provider_response": provider_detail}) from exc
+        raise HTTPException(status_code=502, detail={
+            "provider_status": exc.response.status_code,
+            "provider_response": provider_detail,
+        }) from exc
     except httpx.RequestError as exc:
-        raise HTTPException(status_code=502, detail=f"Voice provider connection failed: {type(exc).__name__}") from exc
+        raise HTTPException(status_code=502,
+                            detail=f"Voice provider connection failed: {type(exc).__name__}") from exc
     try:
-        result = response.json()
+        return response.json()
     except ValueError as exc:
         raise HTTPException(status_code=502, detail="Voice provider returned non-JSON data") from exc
-    return result
 
 
 class VoiceValidateRequest(BaseModel):
@@ -81,11 +83,10 @@ async def generate_voice(body: VoiceGenerateRequest):
 
 
 @router.get("/record-info")
-async def voice_record_info(task_id: str = Query(min_length=1, description="Voice generation task ID")):
-    # Provider query name should be verified against the live API docs.
+async def voice_record_info(task_id: str = Query(min_length=1)):
     return await _request("GET", "/api/v1/voice/record-info", params={"taskId": task_id})
 
 
 @router.post("/check-voice")
 async def check_voice(body: VoiceCheckRequest):
-    return await _request("POST", "/api/v1/voice/check-voice", payload=body.model_dump())
+    return await _request("POST", "/api/v1/voice/check-voice", payload=body.model_dump(mode="json"))
