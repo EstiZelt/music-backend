@@ -26,6 +26,7 @@ from services.suno_cover_service import (
     upload_cover,
 )
 
+from services.voice_service import router as voice_router
 from services.alignment_service import analyze_alignment
 from services.timing_service import create_timing_test_mix
 
@@ -34,6 +35,8 @@ app = FastAPI(
     title="Music Backend",
     version="2.2.0",
 )
+
+app.include_router(voice_router)
 
 app.add_middleware(
     CORSMiddleware,
