@@ -9,6 +9,10 @@ import httpx
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field, HttpUrl
 
+from datetime import datetime, timezone
+
+voice_callbacks = []
+
 router = APIRouter(prefix="/voice", tags=["Voice fingerprint (experimental)"])
 BASE_URL = os.getenv("SUNO_BASE_URL", "https://apibox.erweima.ai").rstrip("/")
 
@@ -89,6 +93,31 @@ async def voice_validate_info(
         "/api/v1/voice/validate-info",
         params={"taskId": task_id}
     )
+
+@router.post("/callback")
+async def voice_callback(payload: dict):
+    event = {
+        "received_at": datetime.now(
+            timezone.utc
+        ).isoformat(),
+        "payload": payload
+    }
+
+    voice_callbacks.append(event)
+
+    # Keep only the latest 20 events
+    if len(voice_callbacks) > 20:
+        voice_callbacks.pop(0)
+
+    return {"received": True}
+
+
+@router.get("/callback-results")
+async def get_voice_callback_results():
+    return {
+        "count": len(voice_callbacks),
+        "events": voice_callbacks
+    }
 
 @router.post("/generate")
 async def generate_voice(body: VoiceGenerateRequest):
