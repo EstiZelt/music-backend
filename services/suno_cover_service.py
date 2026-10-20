@@ -78,7 +78,7 @@ async def generate_upload_cover(
         ),
         "model": "V6",
         "audioWeight": 1.0,
-        "styleWeight": 0.5,
+        "styleWeight": 0.0,
         "weirdnessConstraint": 0.0,
         "variety": 0,
     }
