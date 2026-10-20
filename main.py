@@ -27,6 +27,7 @@ from services.suno_cover_service import (
 )
 
 from services.voice_service import router as voice_router
+from services.voice_cover_service import router as voice_cover_router
 from services.alignment_service import analyze_alignment
 from services.timing_service import create_timing_test_mix
 
@@ -37,6 +38,7 @@ app = FastAPI(
 )
 
 app.include_router(voice_router)
+app.include_router(voice_cover_router)
 
 app.add_middleware(
     CORSMiddleware,
