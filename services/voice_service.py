@@ -71,7 +71,7 @@ class VoiceGenerateRequest(BaseModel):
 
 
 class VoiceCheckRequest(BaseModel):
-    voiceId: str = Field(min_length=1)
+    taskId: str = Field(min_length=1)
 
 
 @router.post("/validate")
