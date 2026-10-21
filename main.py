@@ -410,10 +410,25 @@ async def analyze_song_endpoint(
             detail=str(e),
         )
 
+    
     except httpx.HTTPStatusError as e:
+        error_body = e.response.text
+
+        print(
+            "OpenAI API error:",
+            e.response.status_code,
+            error_body[:2000],
+        )
+
         raise HTTPException(
             status_code=502,
-            detail=f"External API error: {e.response.status_code}",
+            detail={
+                "status_code": e.response.status_code,
+                "message": (
+                    "OpenAI API request failed. "
+                    "Check Render logs for the provider error."
+                ),
+            },
         )
 
     except Exception as e:
