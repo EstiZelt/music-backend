@@ -157,8 +157,9 @@ async def analyze_song(upload_url: str) -> dict:
                         {
                             "type": "text",
                             "text": (
-                                "Analyze this complete song recording "
-                                "and return the Suno-ready JSON."
+                                "Listen to the entire recording. "
+                                "Return the complete phonetic Latin transcription "
+                                "and a Hebrew song title as JSON."
                             ),
                         },
                         {
@@ -186,6 +187,11 @@ async def analyze_song(upload_url: str) -> dict:
         api_response.raise_for_status()
         result = api_response.json()
 
+    usage = result.get("usage", {})
+
+    print("OPENAI MODEL:", result.get("model"))
+    print("OPENAI USAGE:", usage)
+
     content = result["choices"][0]["message"]["content"]
 
     # The model should return JSON, but may occasionally
@@ -203,12 +209,8 @@ async def analyze_song(upload_url: str) -> dict:
             "OpenAI returned invalid JSON"
         ) from exc
 
-    required_fields = (
-        "title",
-        "lyrics",
-        "tags",
-        "negative_tags",
-    )
+    
+    required_fields = ("title", "lyrics")
 
     for field in required_fields:
         if not isinstance(song.get(field), str):
@@ -225,15 +227,7 @@ async def analyze_song(upload_url: str) -> dict:
     if len(song["lyrics"]) > 5000:
         raise RuntimeError("Lyrics exceed 5000 characters")
 
-    if len(song["tags"]) > 1000:
-        raise RuntimeError("Tags exceed 1000 characters")
-
-    if len(song["negative_tags"]) > 500:
-        raise RuntimeError(
-            "Negative tags exceed 500 characters"
-        )
-
     return {
-        field: song[field]
-        for field in required_fields
+        "title": song["title"],
+        "lyrics": song["lyrics"]
     }
