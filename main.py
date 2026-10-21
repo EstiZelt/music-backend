@@ -95,10 +95,22 @@ class MashupRequest(BaseModel):
     title: str = "My Mashup"
     lyrics: str | None = None
 
+
 class UploadCoverRequest(BaseModel):
     upload_url: str
     title: str = "My Song"
     lyrics: str = ""
+
+    persona_id: str | None = Field(
+        default=None,
+        description="Suno Voice ID"
+    )
+
+    persona_model: str = Field(
+        default="voice_persona",
+        description="Suno persona model"
+    )
+
 class TimingMixRequest(BaseModel):
     vocal_url: str
     instrumental_url: str
@@ -274,6 +286,7 @@ async def mashup_details(task_id: str):
             detail=e.response.text
         )
 
+
 @app.post("/upload-cover")
 async def upload_cover_endpoint(
     request: UploadCoverRequest
@@ -283,13 +296,30 @@ async def upload_cover_endpoint(
             upload_url=request.upload_url,
             title=request.title,
             lyrics=request.lyrics,
+            persona_id=request.persona_id,
+            persona_model=request.persona_model,
         )
         return result
 
-    except Exception as e:
+    except httpx.HTTPStatusError as e:
         raise HTTPException(
-            status_code=500,
-            detail=str(e)
+            status_code=502,
+            detail={
+                "provider_status": e.response.status_code,
+                "provider_response": e.response.text[:2000],
+            },
+        )
+
+    except (ValueError, RuntimeError) as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=str(e),
         )
 
 @app.get("/cover-generation-details/{task_id}")
