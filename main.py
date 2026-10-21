@@ -29,7 +29,7 @@ from services.voice_service import router as voice_router
 from services.voice_cover_service import router as voice_cover_router
 from services.alignment_service import analyze_alignment
 from services.timing_service import create_timing_test_mix
-
+from services.openai_service import analyze_song
 
 app = FastAPI(
     title="Music Backend",
@@ -129,6 +129,11 @@ class TimingMixRequest(BaseModel):
         ),
     )
 
+class AnalyzeSongRequest(BaseModel):
+    upload_url: str = Field(
+        ...,
+        description="Public HTTPS URL of an MP3 or WAV recording"
+    )
 
 # =====================================
 # HEALTH CHECK
@@ -362,6 +367,36 @@ async def cover_generation_details_endpoint(
         )
 
         return result
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
+
+@app.post("/analyze-song")
+async def analyze_song_endpoint(request: AnalyzeSongRequest):
+    try:
+        result = await analyze_song(
+            upload_url=request.upload_url
+        )
+
+        return {
+            "success": True,
+            "data": result,
+        }
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"External API error: {e.response.status_code}",
+        )
 
     except Exception as e:
         raise HTTPException(
