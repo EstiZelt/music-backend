@@ -6,44 +6,39 @@ SUNO_API_KEY = os.getenv("SUNO_API_KEY")
 SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
-
-
-
-
-
-
 DEFAULT_TAGS = (
-    "ABSOLUTE PRIORITY: The final song must use the EXACT uploaded "
-    "original vocal recording as its fixed, immutable audio track, "
-    "preserving the authentic waveform throughout. "
-    "Vocal preservation overrides every musical or production choice. "
-    "Retain 100% of the singer's identity, natural timbre, formants, "
-    "accent, pronunciation, every consonant, vowel, syllable, word, "
-    "breath, note, melody, timing, phrasing and expression. "
-    "Include EVERY original sung section, verse, chorus and final "
-    "phrase in full, in the original order. "
-    "Apply only gentle noise reduction and minimal transparent EQ "
-    "while maintaining vocal authenticity. "
-    "Build a beautiful, full, rich professional instrumental "
-    "arrangement with piano, warm strings, bass and rhythmic drums "
-    "around the original performance. "
-    "Match its exact structure, entrances, pauses and timing. "
-    "Keep the original voice clear and dominant, with tasteful "
-    "instrumental intro, transitions and outro."
+    "ABSOLUTE PRIORITY: Use the EXACT original uploaded vocal "
+    "recording as the sole lead vocal track in the final mix. "
+    "Preserve its authentic waveform, unique vocal fingerprint, "
+    "tone color, timbre, formants, resonance, texture, pitch "
+    "contours, intonation, vibrato, microtonal nuances, dynamics, "
+    "breaths, accent, pronunciation, consonants, vowels, syllables, "
+    "lyrics, melody, phrasing, timing and emotion with total fidelity. "
+    "Retain every original sung phrase, verse, chorus and ending "
+    "in full and in order. Vocal authenticity takes precedence "
+    "over all production decisions. Apply only gentle background "
+    "noise reduction and transparent minimal EQ. Build a beautiful, "
+    "full, rich instrumental arrangement with piano, warm strings, "
+    "bass and rhythmic drums, precisely supporting the original "
+    "vocal entrances, pauses and tempo. Keep the singer clear "
+    "and dominant, with elegant instrumental intro, transitions "
+    "and outro."
 )
 
 DEFAULT_NEGATIVE_TAGS = (
     "AI vocal regeneration, re-singing, replacement voice, "
-    "voice cloning, altered waveform, changed timbre, "
-    "mispronunciation, changed consonants, vowels or syllables, "
-    "changed lyrics, missing words, pitch correction, autotune, "
-    "time stretching, vocal effects, choir, backing vocals, "
-    "harmonies, doubled vocals, extra singers, "
-    "instrumental replacement of sung sections, missing verses, "
-    "skipped phrases, sparse accompaniment, overpowering "
-    "instruments, distortion, aggressive noise reduction, "
-    "abrupt ending, cut vocals"
+    "voice cloning, altered vocal identity, changed timbre, "
+    "formant shifting, pitch correction, autotune, altered "
+    "intonation, vibrato or pitch contours, changed pronunciation, "
+    "accent, vowels, consonants or lyrics, missing words, "
+    "skipped verses, time stretching, vocal effects, choir, "
+    "backing vocals, harmonies, doubled vocals, extra singers, "
+    "instrumental replacement of vocals, overpowering instruments, "
+    "aggressive denoising, cut vocals"
 )
+
+assert len(DEFAULT_TAGS) <= 1000
+assert len(DEFAULT_NEGATIVE_TAGS) <= 500
 
 
 async def add_instrumental(
