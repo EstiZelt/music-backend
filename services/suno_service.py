@@ -6,31 +6,39 @@ SUNO_API_KEY = os.getenv("SUNO_API_KEY")
 SUNO_BASE_URL = "https://apibox.erweima.ai"
 
 
-
 DEFAULT_TAGS = (
-    "Professional studio song production based on the uploaded vocal performance. "
-    "PRIMARY GOAL: retain the recognizable original singer, natural vocal timbre, "
-    "accent, pronunciation, exact lyrics, melody and phrasing. "
-    "Keep the original lead vocal as the sole singer, without re-singing or changing words. "
-    "Clean and polished vocal sound with gentle noise reduction, transparent EQ "
-    "and natural compression. "
-    "Create a complete, clearly audible, moderately rich instrumental arrangement "
-    "with piano, warm strings, bass and steady rhythmic drums. "
-    "Instruments must support the vocal throughout the song, with balanced volume "
-    "and no competing melodies. "
-    "Maintain natural vocal expression, consistent accompaniment, clear intelligible "
-    "words, professional mixing and a smooth musical ending."
+    "ABSOLUTE PRIORITY: Use the EXACT original uploaded vocal "
+    "recording as the sole lead vocal track in the final mix. "
+    "Preserve its authentic waveform, unique vocal fingerprint, "
+    "tone color, timbre, formants, resonance, texture, pitch "
+    "contours, intonation, vibrato, microtonal nuances, dynamics, "
+    "breaths, accent, pronunciation, consonants, vowels, syllables, "
+    "lyrics, melody, phrasing, timing and emotion with total fidelity. "
+    "Retain every original sung phrase, verse, chorus and ending "
+    "in full and in order. Vocal authenticity takes precedence "
+    "over all production decisions. Apply only gentle background "
+    "noise reduction and transparent minimal EQ. Build a beautiful, "
+    "full, rich instrumental arrangement with piano, warm strings, "
+    "bass and rhythmic drums, precisely supporting the original "
+    "vocal entrances, pauses and tempo. Keep the singer clear "
+    "and dominant, with elegant instrumental intro, transitions "
+    "and outro."
 )
-
 
 DEFAULT_NEGATIVE_TAGS = (
-    "replacement singer, synthetic vocals, altered vocal identity, "
-    "changed timbre, wrong pronunciation, changed lyrics, missing words, "
-    "re-singing, heavy autotune, choir, backing vocals, vocal harmonies, "
-    "doubled vocals, second singer, instrumental only, weak accompaniment, "
-    "sparse arrangement, excessive orchestration, loud instruments, "
-    "background noise, hiss, distortion, muddy mix, abrupt ending, cut vocals"
+    "AI vocal regeneration, re-singing, replacement voice, "
+    "voice cloning, altered vocal identity, changed timbre, "
+    "formant shifting, pitch correction, autotune, altered "
+    "intonation, vibrato or pitch contours, changed pronunciation, "
+    "accent, vowels, consonants or lyrics, missing words, "
+    "skipped verses, time stretching, vocal effects, choir, "
+    "backing vocals, harmonies, doubled vocals, extra singers, "
+    "instrumental replacement of vocals, overpowering instruments, "
+    "aggressive denoising, cut vocals"
 )
+
+assert len(DEFAULT_TAGS) <= 1000
+assert len(DEFAULT_NEGATIVE_TAGS) <= 500
 
 
 async def add_instrumental(
@@ -65,7 +73,7 @@ async def add_instrumental(
 
         "model": "V6",
         "audioWeight": 1.0,
-        "styleWeight": 0.0,
+        "styleWeight": 0.3,
         "weirdnessConstraint": 0.0,
         "variety": 0,
     }
