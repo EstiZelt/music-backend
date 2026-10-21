@@ -37,12 +37,15 @@ DEFAULT_COVER_NEGATIVE_TAGS = (
 )
 
 
+
 async def generate_upload_cover(
     upload_url: str,
     title: str = "My Song",
     style: str = DEFAULT_COVER_STYLE,
     negative_tags: str = DEFAULT_COVER_NEGATIVE_TAGS,
     lyrics: str = "",
+    persona_id: str | None = None,
+    persona_model: str = "voice_persona",
 ):
     if not SUNO_API_KEY:
         raise RuntimeError("SUNO_API_KEY is not configured")
@@ -78,14 +81,18 @@ async def generate_upload_cover(
         ),
         "model": "V6",
         "audioWeight": 1.0,
-        "styleWeight": 0.5,
+        "styleWeight": 0.0,
         "weirdnessConstraint": 0.0,
         "variety": 0,
     }
 
     if lyrics.strip():
         payload["lyrics"] = lyrics.strip()
-    
+
+    if persona_id:
+        payload["personaId"] = persona_id
+        payload["personaModel"] = persona_model
+        
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
             url,
@@ -102,6 +109,7 @@ async def generate_upload_cover(
         )
 
     return result
+
 
 
 async def get_cover_generation_details(task_id: str):
@@ -133,4 +141,17 @@ async def get_cover_generation_details(task_id: str):
             f"Suno Cover status request failed: {result}"
         )
 
+    return result
+
+
+async def upload_cover(
+    upload_url: str,
+    title: str = "POC Cover",
+    style: str = DEFAULT_COVER_STYLE,
+):
+    return await generate_upload_cover(
+        upload_url=upload_url,
+        title=title,
+        style=style,
+    )
     return result

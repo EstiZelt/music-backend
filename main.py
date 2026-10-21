@@ -25,6 +25,8 @@ from services.suno_cover_service import (
     get_cover_generation_details,
 )
 
+from services.voice_service import router as voice_router
+from services.voice_cover_service import router as voice_cover_router
 from services.alignment_service import analyze_alignment
 from services.timing_service import create_timing_test_mix
 
@@ -33,6 +35,9 @@ app = FastAPI(
     title="Music Backend",
     version="2.2.1",
 )
+
+app.include_router(voice_router)
+app.include_router(voice_cover_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -334,11 +339,13 @@ async def upload_cover_endpoint(
             upload_url=request.upload_url,
             title=request.title,
             lyrics=request.lyrics,
+            persona_id=request.persona_id,
+            persona_model=request.persona_model,
         )
 
         return result
 
-    except Exception as e:
+    except httpx.HTTPStatusError as e:
         raise HTTPException(
             status_code=500,
             detail=str(e),
