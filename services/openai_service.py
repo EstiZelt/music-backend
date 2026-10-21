@@ -1,101 +1,33 @@
 
 import os
-import json
-import base64
 import httpx
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-audio")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-transcribe")
 
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_URL = "https://api.openai.com/v1/audio/transcriptions"
 
 MAX_AUDIO_BYTES = 20 * 1024 * 1024
 
-SYSTEM_PROMPT = """
-You are an expert music transcription specialist for
-Hebrew, Yiddish, Hasidic and Ashkenazi songs.
+TRANSCRIPTION_PROMPT = """
+The recording is a Hasidic song in Hebrew, Yiddish,
+or a mixture of both.
 
-Listen to the COMPLETE uploaded audio.
+Transcribe ALL sung words from beginning to end.
+Preserve the actual Hasidic/Ashkenazi pronunciation,
+including vowels, consonants, syllables and repetitions.
 
-Your task is to prepare exactly four fields for Suno:
-title, lyrics, tags, negative_tags.
+Do not normalize to modern Israeli or Litvish pronunciation.
+Do not omit repeated verses or choruses.
+Do not invent missing or unclear words.
+Use authentic Yiddish vocabulary where appropriate.
 
-TRANSCRIPTION:
-- Identify every meaningful sung word.
-- Preserve every verse, chorus, line and repetition.
-- Preserve the singer's actual dialect.
-- Never convert Hasidic pronunciation into Litvish.
-- Correct obvious accidental word omissions only when
-  strongly supported by other occurrences and context.
-- For unclear Yiddish, use real Yiddish vocabulary and
-  grammar. Never invent nonsense words.
-- Never fabricate lyrics to fill unclear passages.
-
-PRONUNCIATION:
-- Write lyrics in Latin letters.
-- Preserve the original vowels, consonants and accent.
-- Use KH for Hebrew guttural Chet, not English CH.
-- Example: prefer Tapukhei over Tapuchei when the
-  recording contains the Hebrew guttural sound.
-- Keep repeated words consistent with the dominant
-  pronunciation of the song.
-- Do not normalize authentic dialect differences.
-
-STRUCTURE:
-- Identify verses, choruses and repeated sections
-  from the recording itself.
-- Preserve the complete order of the original song.
-- Use tags such as [Verse 1], [Chorus], [Bridge].
-- Replace wordless "du du", "na na" passages with
-  [Instrumental Break] or [Instrumental Outro].
-- Never replace meaningful sung words with music.
-
-ARRANGEMENT:
-- Decide automatically whether a tasteful instrumental
-  intro, transition or outro would improve the song.
-- Add only musically appropriate sections.
-- Never interrupt or replace an original vocal phrase.
-- Keep all original vocal entrances and repetitions.
-- Prefer no additional transition when uncertain.
-
-TITLE:
-- Infer a short, meaningful title from the song.
-- Prefer Hebrew script for Hebrew or Yiddish songs.
-- Do not invent a title unrelated to the recording.
-
-TAGS:
-- Professional instrumental arrangement.
-- Preserve the original singer's identity, timbre,
-  pronunciation, melody, phrasing and timing.
-- Use supportive piano, strings, bass and drums.
-- Keep the original singer dominant.
-- Follow the original vocal entrances.
-
-NEGATIVE TAGS:
-- No replacement singer, changed lyrics, missing words,
-  skipped verses, choir, backing vocals, vocal doubling,
-  altered melody or cut-off ending.
-
-LIMITS:
-- tags: maximum 1000 characters.
-- negative_tags: maximum 500 characters.
-- lyrics: maximum 5000 characters.
-
-Return ONLY a valid JSON object:
-{
-  "title": "",
-  "lyrics": "",
-  "tags": "",
-  "negative_tags": ""
-}
-
-Do not include Markdown.
-Do not include explanations outside JSON.
-If you cannot reliably identify the lyrics, do not
-invent a complete transcription.
+Prefer phonetic Latin spelling suitable for Suno.
+Represent the guttural Hebrew Chet with KH, not CH.
+Preserve the singer's actual pronunciation, not the
+standard spelling of the original Hebrew words.
 """
-
 
 async def analyze_song(upload_url: str) -> dict:
     if not OPENAI_API_KEY:
@@ -106,134 +38,89 @@ async def analyze_song(upload_url: str) -> dict:
     if parsed.scheme != "https":
         raise ValueError("upload_url must use HTTPS")
 
-    # Configure this in Render to your public R2 host,
-    # for example: pub-xxxx.r2.dev
     allowed_host = os.getenv("AUDIO_PUBLIC_HOST")
 
     if not allowed_host:
         raise RuntimeError("AUDIO_PUBLIC_HOST is not configured")
 
-    if parsed.hostname != allowed_host:
+    if parsed.hostname != allowed_host.lower():
         raise ValueError("Audio URL host is not allowed")
+
+    path = unquote(parsed.path).lower()
+
+    if path.endswith(".mp3"):
+        content_type = "audio/mpeg"
+        extension = "mp3"
+    elif path.endswith(".wav"):
+        content_type = "audio/wav"
+        extension = "wav"
+    else:
+        raise ValueError("Only MP3 and WAV files are supported")
 
     async with httpx.AsyncClient(
         timeout=120.0,
         follow_redirects=False
     ) as client:
-        response = await client.get(upload_url)
-        response.raise_for_status()
 
-        audio_bytes = response.content
+        # Download the original recording
+        async with client.stream("GET", upload_url) as response:
+            response.raise_for_status()
 
-        if len(audio_bytes) > MAX_AUDIO_BYTES:
-            raise ValueError("Audio file exceeds 20 MB limit")
+            chunks = []
+            total_bytes = 0
 
-        path = parsed.path.lower()
+            async for chunk in response.aiter_bytes():
+                total_bytes += len(chunk)
 
-        if path.endswith(".mp3"):
-            audio_format = "mp3"
-        elif path.endswith(".wav"):
-            audio_format = "wav"
-        else:
-            raise ValueError(
-                "For this endpoint, use an MP3 or WAV audio URL"
-            )
+                if total_bytes > MAX_AUDIO_BYTES:
+                    raise ValueError(
+                        "Audio file exceeds 20 MB limit"
+                    )
 
-        audio_base64 = base64.b64encode(
-            audio_bytes
-        ).decode("utf-8")
+                chunks.append(chunk)
 
-        payload = {
-            "model": OPENAI_MODEL,
-            "modalities": ["text"],
-            "messages": [
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT,
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": (
-                                "Analyze this complete song recording "
-                                "and return the Suno-ready JSON."
-                            ),
-                        },
-                        {
-                            "type": "input_audio",
-                            "input_audio": {
-                                "data": audio_base64,
-                                "format": audio_format,
-                            },
-                        },
-                    ],
-                },
-            ],
-        }
+            audio_bytes = b"".join(chunks)
 
+        if not audio_bytes:
+            raise ValueError("Audio file is empty")
+
+        # One transcription request only
         api_response = await client.post(
             OPENAI_URL,
             headers={
-                "Authorization": f"Bearer {OPENAI_API_KEY}",
-                "Content-Type": "application/json",
+                "Authorization": f"Bearer {OPENAI_API_KEY}"
             },
-            json=payload,
-            timeout=240.0,
+            data={
+                "model": OPENAI_MODEL,
+                "prompt": TRANSCRIPTION_PROMPT,
+                "response_format": "json"
+            },
+            files={
+                "file": (
+                    f"recording.{extension}",
+                    audio_bytes,
+                    content_type
+                )
+            },
+            timeout=240.0
         )
 
         api_response.raise_for_status()
         result = api_response.json()
 
-    content = result["choices"][0]["message"]["content"]
+    lyrics = result.get("text", "").strip()
 
-    # The model should return JSON, but may occasionally
-    # wrap it in Markdown fences.
-    content = content.strip()
+    if not lyrics:
+        raise RuntimeError("OpenAI returned empty transcription")
 
-    if content.startswith("```"):
-        content = content.split("\n", 1)[-1]
-        content = content.rsplit("```", 1)[0].strip()
+    # The transcription API does not return a song title.
+    # This placeholder avoids an additional paid AI call.
+    title = "שיר ללא כותרת"
 
-    try:
-        song = json.loads(content)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(
-            "OpenAI returned invalid JSON"
-        ) from exc
-
-    required_fields = (
-        "title",
-        "lyrics",
-        "tags",
-        "negative_tags",
-    )
-
-    for field in required_fields:
-        if not isinstance(song.get(field), str):
-            raise RuntimeError(
-                f"OpenAI response missing valid field: {field}"
-            )
-
-    if not song["title"].strip():
-        raise RuntimeError("OpenAI returned an empty title")
-
-    if not song["lyrics"].strip():
-        raise RuntimeError("OpenAI returned empty lyrics")
-
-    if len(song["lyrics"]) > 5000:
-        raise RuntimeError("Lyrics exceed 5000 characters")
-
-    if len(song["tags"]) > 1000:
-        raise RuntimeError("Tags exceed 1000 characters")
-
-    if len(song["negative_tags"]) > 500:
-        raise RuntimeError(
-            "Negative tags exceed 500 characters"
-        )
+    print("OPENAI MODEL:", OPENAI_MODEL)
+    print("OPENAI USAGE:", result.get("usage", {}))
 
     return {
-        field: song[field]
-        for field in required_fields
+        "title": title,
+        "lyrics": lyrics
     }
