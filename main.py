@@ -421,3 +421,41 @@ async def analyze_song_endpoint(
             status_code=500,
             detail=str(e),
         )
+
+
+
+
+class AutoSongRequest(BaseModel):
+    upload_url: str
+    title: str | None = None
+
+
+@app.post("/create-song-auto")
+async def create_song_auto(request: AutoSongRequest):
+    try:
+        analysis = await analyze_song(
+            upload_url=request.upload_url
+        )
+
+        lyrics = analysis["lyrics"]
+
+        result = await add_instrumental(
+            upload_url=request.upload_url,
+            title=request.title or analysis["title"],
+            lyrics=lyrics,
+            tags=analysis["tags"],
+            negative_tags=analysis["negative_tags"],
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis,
+            "generation": result,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
+
