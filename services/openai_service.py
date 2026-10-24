@@ -1,9 +1,13 @@
-
 import os
 import json
 import base64
-import httpx
+import asyncio
+import tempfile
+from pathlib import Path
 from urllib.parse import urlparse
+
+import httpx
+
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-audio")
@@ -11,6 +15,7 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-audio")
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 
 MAX_AUDIO_BYTES = 20 * 1024 * 1024
+
 
 SYSTEM_PROMPT = """
 You are an expert music transcription specialist for
@@ -97,47 +102,146 @@ invent a complete transcription.
 """
 
 
+async def convert_audio_to_wav(audio_bytes: bytes) -> bytes:
+    """
+    Convert incoming audio to WAV using FFmpeg.
+
+    This allows browser recordings such as WebM,
+    as well as MP3, WAV, M4A and other formats
+    supported by FFmpeg.
+    """
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        input_path = Path(temp_dir) / "input_audio"
+        output_path = Path(temp_dir) / "output.wav"
+
+        input_path.write_bytes(audio_bytes)
+
+        process = await asyncio.create_subprocess_exec(
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nostdin",
+            "-y",
+            "-i",
+            str(input_path),
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            "24000",
+            "-c:a",
+            "pcm_s16le",
+            str(output_path),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        _, stderr = await process.communicate()
+
+        if process.returncode != 0:
+            error_message = stderr.decode(
+                "utf-8",
+                errors="replace",
+            )
+
+            raise ValueError(
+                "Audio conversion failed: "
+                + error_message[:500]
+            )
+
+        if not output_path.exists():
+            raise RuntimeError(
+                "FFmpeg did not create the WAV file"
+            )
+
+        wav_bytes = output_path.read_bytes()
+
+        if not wav_bytes:
+            raise ValueError(
+                "Converted audio file is empty"
+            )
+
+        if len(wav_bytes) > MAX_AUDIO_BYTES:
+            raise ValueError(
+                "Converted WAV exceeds 20 MB limit"
+            )
+
+        return wav_bytes
+
+
 async def analyze_song(upload_url: str) -> dict:
     if not OPENAI_API_KEY:
-        raise RuntimeError("OPENAI_API_KEY is not configured")
+        raise RuntimeError(
+            "OPENAI_API_KEY is not configured"
+        )
 
     parsed = urlparse(upload_url)
 
     if parsed.scheme != "https":
-        raise ValueError("upload_url must use HTTPS")
+        raise ValueError(
+            "upload_url must use HTTPS"
+        )
 
-    # Configure this in Render to your public R2 host,
-    # for example: pub-xxxx.r2.dev
+    # Public Supabase/R2/etc. host allowed to serve audio.
+    # Example:
+    # xkhlanvyqbncrzecvjkn.supabase.co
     allowed_host = os.getenv("AUDIO_PUBLIC_HOST")
 
     if not allowed_host:
-        raise RuntimeError("AUDIO_PUBLIC_HOST is not configured")
+        raise RuntimeError(
+            "AUDIO_PUBLIC_HOST is not configured"
+        )
 
-    if parsed.hostname != allowed_host:
-        raise ValueError("Audio URL host is not allowed")
+    allowed_host = allowed_host.strip().lower()
+
+    if parsed.hostname is None:
+        raise ValueError(
+            "Invalid audio URL"
+        )
+
+    if parsed.hostname.lower() != allowed_host:
+        raise ValueError(
+            "Audio URL host is not allowed"
+        )
 
     async with httpx.AsyncClient(
         timeout=120.0,
-        follow_redirects=False
+        follow_redirects=False,
     ) as client:
+
         response = await client.get(upload_url)
         response.raise_for_status()
 
         audio_bytes = response.content
 
-        if len(audio_bytes) > MAX_AUDIO_BYTES:
-            raise ValueError("Audio file exceeds 20 MB limit")
-
-        path = parsed.path.lower()
-
-        if path.endswith(".mp3"):
-            audio_format = "mp3"
-        elif path.endswith(".wav"):
-            audio_format = "wav"
-        else:
+        if not audio_bytes:
             raise ValueError(
-                "For this endpoint, use an MP3 or WAV audio URL"
+                "Downloaded audio file is empty"
             )
+
+        if len(audio_bytes) > MAX_AUDIO_BYTES:
+            raise ValueError(
+                "Audio file exceeds 20 MB limit"
+            )
+
+        # -------------------------------------------------
+        # IMPORTANT:
+        # Do not rely on the file extension in the URL.
+        #
+        # Browser recordings may be WebM/Opus and signed
+        # Supabase URLs do not always provide a useful
+        # extension.
+        #
+        # Convert the actual downloaded audio to WAV.
+        # -------------------------------------------------
+
+        audio_bytes = await convert_audio_to_wav(
+            audio_bytes
+        )
+
+        audio_format = "wav"
 
         audio_base64 = base64.b64encode(
             audio_bytes
@@ -157,8 +261,9 @@ async def analyze_song(upload_url: str) -> dict:
                         {
                             "type": "text",
                             "text": (
-                                "Analyze this complete song recording "
-                                "and return the Suno-ready JSON."
+                                "Analyze this complete song "
+                                "recording and return the "
+                                "Suno-ready JSON."
                             ),
                         },
                         {
@@ -176,7 +281,9 @@ async def analyze_song(upload_url: str) -> dict:
         api_response = await client.post(
             OPENAI_URL,
             headers={
-                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Authorization": (
+                    f"Bearer {OPENAI_API_KEY}"
+                ),
                 "Content-Type": "application/json",
             },
             json=payload,
@@ -184,20 +291,41 @@ async def analyze_song(upload_url: str) -> dict:
         )
 
         api_response.raise_for_status()
+
         result = api_response.json()
 
-    content = result["choices"][0]["message"]["content"]
+    try:
+        content = (
+            result["choices"][0]
+            ["message"]["content"]
+        )
+    except (
+        KeyError,
+        IndexError,
+        TypeError,
+    ) as exc:
+        raise RuntimeError(
+            "Unexpected OpenAI response"
+        ) from exc
 
-    # The model should return JSON, but may occasionally
-    # wrap it in Markdown fences.
     content = content.strip()
 
+    # GPT should return pure JSON, but remove Markdown
+    # fences if the model adds them.
     if content.startswith("```"):
-        content = content.split("\n", 1)[-1]
-        content = content.rsplit("```", 1)[0].strip()
+        content = content.split(
+            "\n",
+            1,
+        )[-1]
+
+        content = content.rsplit(
+            "```",
+            1,
+        )[0].strip()
 
     try:
         song = json.loads(content)
+
     except json.JSONDecodeError as exc:
         raise RuntimeError(
             "OpenAI returned invalid JSON"
@@ -211,22 +339,34 @@ async def analyze_song(upload_url: str) -> dict:
     )
 
     for field in required_fields:
-        if not isinstance(song.get(field), str):
+        if not isinstance(
+            song.get(field),
+            str,
+        ):
             raise RuntimeError(
-                f"OpenAI response missing valid field: {field}"
+                "OpenAI response missing "
+                f"valid field: {field}"
             )
 
     if not song["title"].strip():
-        raise RuntimeError("OpenAI returned an empty title")
+        raise RuntimeError(
+            "OpenAI returned an empty title"
+        )
 
     if not song["lyrics"].strip():
-        raise RuntimeError("OpenAI returned empty lyrics")
+        raise RuntimeError(
+            "OpenAI returned empty lyrics"
+        )
 
     if len(song["lyrics"]) > 5000:
-        raise RuntimeError("Lyrics exceed 5000 characters")
+        raise RuntimeError(
+            "Lyrics exceed 5000 characters"
+        )
 
     if len(song["tags"]) > 1000:
-        raise RuntimeError("Tags exceed 1000 characters")
+        raise RuntimeError(
+            "Tags exceed 1000 characters"
+        )
 
     if len(song["negative_tags"]) > 500:
         raise RuntimeError(
