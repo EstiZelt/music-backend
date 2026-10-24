@@ -1,8 +1,10 @@
+
 import os
 import json
 import base64
 import asyncio
 import tempfile
+import unicodedata
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -18,76 +20,131 @@ MAX_AUDIO_BYTES = 20 * 1024 * 1024
 
 
 SYSTEM_PROMPT = """
-You are an expert music transcription specialist for
-Hebrew, Yiddish, Hasidic and Ashkenazi songs.
+You are a meticulous audio-to-phonetic-lyrics transcriber.
 
-Listen to the COMPLETE uploaded audio.
+Listen to the ENTIRE recording from the first audible
+sung sound through the last.
 
-Your task is to prepare exactly four fields for Suno:
+The actual audio is the ONLY authority.
+
+Return exactly four JSON string fields:
 title, lyrics, tags, negative_tags.
 
-TRANSCRIPTION:
-- Identify every meaningful sung word.
-- Preserve every verse, chorus, line and repetition.
-- Preserve the singer's actual dialect.
-- Never convert Hasidic pronunciation into Litvish.
-- Correct obvious accidental word omissions only when
-  strongly supported by other occurrences and context.
-- For unclear Yiddish, use real Yiddish vocabulary and
-  grammar. Never invent nonsense words.
-- Never fabricate lyrics to fill unclear passages.
 
-PRONUNCIATION:
-- Write lyrics in Latin letters.
-- Preserve the original vowels, consonants and accent.
-- Use KH for Hebrew guttural Chet, not English CH.
-- Example: prefer Tapukhei over Tapuchei when the
-  recording contains the Hebrew guttural sound.
-- Keep repeated words consistent with the dominant
-  pronunciation of the song.
-- Do not normalize authentic dialect differences.
+ABSOLUTE TRANSCRIPTION PRIORITY:
+
+- Transcribe the SOUNDS actually sung, not an
+  expected or familiar text.
+
+- The lyrics field MUST use LATIN LETTERS ONLY
+  for every sung word.
+
+- No Hebrew, Yiddish, Arabic, Cyrillic or other
+  non-Latin script in lyrics.
+
+- This is PHONETIC TRANSLITERATION,
+  NOT TRANSLATION INTO ENGLISH.
+
+- Preserve every audible consonant, vowel,
+  syllable, diphthong, word ending, stress
+  pattern, repetition and sung vocal entrance.
+
+- Preserve the individual singer's Hasidic,
+  Ashkenazi or Yiddish accent exactly.
+
+- Never normalize pronunciation to Israeli
+  Hebrew, Litvish or dictionary pronunciation.
+
+- Write the guttural Hebrew Chet sound as KH,
+  never CH.
+
+- Do not replace other sounds with KH unless
+  that sound is actually heard.
+
+- Never correct, complete, infer or substitute
+  a word based on familiar lyrics or texts.
+
+- If the singer sings nonsense syllables such
+  as la-la, du-du or na-na, transcribe those
+  actual syllables exactly as heard.
+
+- Do NOT replace sung syllables with an
+  instrumental section.
+
+- Never invent meaningful words.
+
+- For indistinct sounds, transcribe only what
+  is reliably audible.
+
+- Mark genuinely unintelligible short portions
+  as [Unclear].
+
+- Never silently omit verses, repetitions,
+  vocalizations or endings.
+
+- Never make repeated words consistent if the
+  singer actually varies their pronunciation.
+
 
 STRUCTURE:
-- Identify verses, choruses and repeated sections
-  from the recording itself.
-- Preserve the complete order of the original song.
-- Use tags such as [Verse 1], [Chorus], [Bridge].
-- Replace wordless "du du", "na na" passages with
-  [Instrumental Break] or [Instrumental Outro].
-- Never replace meaningful sung words with music.
 
-ARRANGEMENT:
-- Decide automatically whether a tasteful instrumental
-  intro, transition or outro would improve the song.
-- Add only musically appropriate sections.
-- Never interrupt or replace an original vocal phrase.
-- Keep all original vocal entrances and repetitions.
-- Prefer no additional transition when uncertain.
+- Preserve the exact original order and
+  repetitions.
+
+- Use section markers such as:
+  [Verse 1], [Chorus], [Bridge],
+  [Instrumental Break].
+
+- Use [Instrumental Break] only when no
+  singing is audible.
+
+- Do not add imagined verses, lyrics,
+  intros or outros.
+
 
 TITLE:
-- Infer a short, meaningful title from the song.
-- Prefer Hebrew script for Hebrew or Yiddish songs.
-- Do not invent a title unrelated to the recording.
+
+- Give a short title grounded in the recording.
+
+- Hebrew script is permitted in title,
+  but NOT in lyrics.
+
 
 TAGS:
-- Professional instrumental arrangement.
-- Preserve the original singer's identity, timbre,
-  pronunciation, melody, phrasing and timing.
-- Use supportive piano, strings, bass and drums.
-- Keep the original singer dominant.
-- Follow the original vocal entrances.
+
+- Describe a polished instrumental arrangement
+  around the uploaded original lead vocal.
+
+- Support its timing, entrances and melody.
+
+- Favor piano, warm strings, bass and steady
+  drums where appropriate.
+
+- Keep the original singer clearly dominant.
+
+- Preserve all sung sections.
+
 
 NEGATIVE TAGS:
-- No replacement singer, changed lyrics, missing words,
-  skipped verses, choir, backing vocals, vocal doubling,
-  altered melody or cut-off ending.
+
+- No new or replacement singer.
+- No voice imitation.
+- No choir or backing vocals.
+- No vocal doubling.
+- No changed lyrics or pronunciation.
+- No skipped words or altered melody.
+- No missing sections or cut-off ending.
+
 
 LIMITS:
+
+- lyrics: maximum 5000 characters.
 - tags: maximum 1000 characters.
 - negative_tags: maximum 500 characters.
-- lyrics: maximum 5000 characters.
+
 
 Return ONLY a valid JSON object:
+
 {
   "title": "",
   "lyrics": "",
@@ -95,73 +152,74 @@ Return ONLY a valid JSON object:
   "negative_tags": ""
 }
 
-Do not include Markdown.
-Do not include explanations outside JSON.
-If you cannot reliably identify the lyrics, do not
-invent a complete transcription.
+No Markdown fences.
+No additional explanation.
 """
 
 
 async def convert_audio_to_wav(audio_bytes: bytes) -> bytes:
     """
-    Convert incoming audio to WAV using FFmpeg.
+    Convert browser audio formats to 24 kHz mono WAV.
 
-    This allows browser recordings such as WebM,
-    as well as MP3, WAV, M4A and other formats
-    supported by FFmpeg.
+    Supports WebM, MP3, WAV, M4A and other formats
+    recognized by FFmpeg.
     """
 
     with tempfile.TemporaryDirectory() as temp_dir:
+
         input_path = Path(temp_dir) / "input_audio"
         output_path = Path(temp_dir) / "output.wav"
 
         input_path.write_bytes(audio_bytes)
 
-        process = await asyncio.create_subprocess_exec(
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-nostdin",
-            "-y",
-            "-i",
-            str(input_path),
-            "-vn",
-            "-ac",
-            "1",
-            "-ar",
-            "24000",
-            "-c:a",
-            "pcm_s16le",
-            str(output_path),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-
-        _, stderr = await process.communicate()
-
-        if process.returncode != 0:
-            error_message = stderr.decode(
-                "utf-8",
-                errors="replace",
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "ffmpeg",
+                "-hide_banner",
+                "-loglevel", "error",
+                "-nostdin",
+                "-y",
+                "-i", str(input_path),
+                "-vn",
+                "-ac", "1",
+                "-ar", "24000",
+                "-c:a", "pcm_s16le",
+                str(output_path),
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.PIPE,
             )
+
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                "FFmpeg is not installed on the server"
+            ) from exc
+
+        try:
+            _, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=90
+            )
+
+        except asyncio.TimeoutError as exc:
+            process.kill()
+            await process.communicate()
 
             raise ValueError(
-                "Audio conversion failed: "
-                + error_message[:500]
-            )
+                "Audio conversion timed out"
+            ) from exc
 
-        if not output_path.exists():
-            raise RuntimeError(
-                "FFmpeg did not create the WAV file"
+        if process.returncode != 0 or not output_path.exists():
+
+            details = stderr.decode(
+                "utf-8",
+                errors="replace"
+            )[:500]
+
+            raise ValueError(
+                f"Audio conversion failed: {details}"
             )
 
         wav_bytes = output_path.read_bytes()
-
-        if not wav_bytes:
-            raise ValueError(
-                "Converted audio file is empty"
-            )
 
         if len(wav_bytes) > MAX_AUDIO_BYTES:
             raise ValueError(
@@ -172,6 +230,7 @@ async def convert_audio_to_wav(audio_bytes: bytes) -> bytes:
 
 
 async def analyze_song(upload_url: str) -> dict:
+
     if not OPENAI_API_KEY:
         raise RuntimeError(
             "OPENAI_API_KEY is not configured"
@@ -184,9 +243,10 @@ async def analyze_song(upload_url: str) -> dict:
             "upload_url must use HTTPS"
         )
 
-    # Public Supabase/R2/etc. host allowed to serve audio.
-    # Example:
-    # xkhlanvyqbncrzecvjkn.supabase.co
+    # Trusted Supabase Storage hostname.
+    # Configure AUDIO_PUBLIC_HOST in Render
+    # without https:// or paths.
+
     allowed_host = os.getenv("AUDIO_PUBLIC_HOST")
 
     if not allowed_host:
@@ -194,21 +254,14 @@ async def analyze_song(upload_url: str) -> dict:
             "AUDIO_PUBLIC_HOST is not configured"
         )
 
-    allowed_host = allowed_host.strip().lower()
-
-    if parsed.hostname is None:
-        raise ValueError(
-            "Invalid audio URL"
-        )
-
-    if parsed.hostname.lower() != allowed_host:
+    if parsed.hostname != allowed_host:
         raise ValueError(
             "Audio URL host is not allowed"
         )
 
     async with httpx.AsyncClient(
         timeout=120.0,
-        follow_redirects=False,
+        follow_redirects=False
     ) as client:
 
         response = await client.get(upload_url)
@@ -216,26 +269,13 @@ async def analyze_song(upload_url: str) -> dict:
 
         audio_bytes = response.content
 
-        if not audio_bytes:
-            raise ValueError(
-                "Downloaded audio file is empty"
-            )
-
         if len(audio_bytes) > MAX_AUDIO_BYTES:
             raise ValueError(
                 "Audio file exceeds 20 MB limit"
             )
 
-        # -------------------------------------------------
-        # IMPORTANT:
-        # Do not rely on the file extension in the URL.
-        #
-        # Browser recordings may be WebM/Opus and signed
-        # Supabase URLs do not always provide a useful
-        # extension.
-        #
-        # Convert the actual downloaded audio to WAV.
-        # -------------------------------------------------
+        # Convert actual audio content to WAV.
+        # Do not rely on the URL extension.
 
         audio_bytes = await convert_audio_to_wav(
             audio_bytes
@@ -261,9 +301,15 @@ async def analyze_song(upload_url: str) -> dict:
                         {
                             "type": "text",
                             "text": (
-                                "Analyze this complete song "
-                                "recording and return the "
-                                "Suno-ready JSON."
+                                "Listen to the complete audio. "
+                                "Transcribe the exact sung sounds "
+                                "using Latin letters only. "
+                                "Preserve every syllable, vowel, "
+                                "consonant, pronunciation variation "
+                                "and repetition. "
+                                "Do not translate, normalize or "
+                                "invent lyrics. "
+                                "Return the Suno-ready JSON."
                             ),
                         },
                         {
@@ -291,36 +337,18 @@ async def analyze_song(upload_url: str) -> dict:
         )
 
         api_response.raise_for_status()
-
         result = api_response.json()
 
-    try:
-        content = (
-            result["choices"][0]
-            ["message"]["content"]
-        )
-    except (
-        KeyError,
-        IndexError,
-        TypeError,
-    ) as exc:
-        raise RuntimeError(
-            "Unexpected OpenAI response"
-        ) from exc
+    content = result["choices"][0]["message"]["content"]
 
     content = content.strip()
 
-    # GPT should return pure JSON, but remove Markdown
-    # fences if the model adds them.
-    if content.startswith("```"):
-        content = content.split(
-            "\n",
-            1,
-        )[-1]
+    # Remove Markdown fences if present.
 
+    if content.startswith("```"):
+        content = content.split("\n", 1)[-1]
         content = content.rsplit(
-            "```",
-            1,
+            "```", 1
         )[0].strip()
 
     try:
@@ -339,13 +367,10 @@ async def analyze_song(upload_url: str) -> dict:
     )
 
     for field in required_fields:
-        if not isinstance(
-            song.get(field),
-            str,
-        ):
+
+        if not isinstance(song.get(field), str):
             raise RuntimeError(
-                "OpenAI response missing "
-                f"valid field: {field}"
+                f"OpenAI response missing valid field: {field}"
             )
 
     if not song["title"].strip():
@@ -357,6 +382,22 @@ async def analyze_song(upload_url: str) -> dict:
         raise RuntimeError(
             "OpenAI returned empty lyrics"
         )
+
+    # Reject non-Latin letters in lyrics.
+    # Never silently rewrite pronunciation.
+
+    for character in song["lyrics"]:
+
+        if (
+            character.isalpha()
+            and "LATIN" not in unicodedata.name(
+                character, ""
+            )
+        ):
+            raise RuntimeError(
+                "OpenAI returned non-Latin lyrics; "
+                "please retry transcription"
+            )
 
     if len(song["lyrics"]) > 5000:
         raise RuntimeError(
