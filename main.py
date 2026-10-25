@@ -1,11 +1,7 @@
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-# from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-# from starlette.background import BackgroundTask
-
-# import os
 import httpx
 
 from services.suno_service import (
@@ -15,20 +11,10 @@ from services.suno_service import (
     DEFAULT_NEGATIVE_TAGS,
 )
 
-# from services.suno_mashup_service import (
-#     generate_mashup,
-#     get_mashup_details,
-# )
-
 from services.suno_cover_service import (
     generate_upload_cover,
     get_cover_generation_details,
 )
-
-# from services.voice_service import router as voice_router
-# from services.voice_cover_service import router as voice_cover_router
-# from services.alignment_service import analyze_alignment
-# from services.timing_service import create_timing_test_mix
 
 from services.openai_service import analyze_song
 
@@ -37,9 +23,6 @@ app = FastAPI(
     title="Music Backend",
     version="2.2.1",
 )
-
-# app.include_router(voice_router)
-# app.include_router(voice_cover_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,11 +39,11 @@ app.add_middleware(
 
 class InstrumentalRequest(BaseModel):
     upload_url: str
-
     title: str = "POC Song"
 
     tags: str = Field(
         default=DEFAULT_TAGS,
+        max_length=1000,
         description="Positive style prompt for Suno",
     )
 
@@ -77,31 +60,6 @@ class InstrumentalRequest(BaseModel):
     )
 
 
-# class CoverRequest(BaseModel):
-#     upload_url: str
-#     title: str = "POC Cover"
-#
-#     style: str = (
-#         "Professional studio instrumental accompaniment, "
-#         "warm piano, expressive strings, gentle rhythmic drums, "
-#         "faithful to the uploaded melody and musical phrasing, "
-#         "preserve the original song structure and natural timing, "
-#         "supportive arrangement with no competing lead melody"
-#     )
-
-
-# class AlignmentRequest(BaseModel):
-#     vocal_url: str
-#     instrumental_url: str
-
-
-# class MashupRequest(BaseModel):
-#     vocal_url: str
-#     instrumental_url: str
-#     title: str = "My Mashup"
-#     lyrics: str | None = None
-
-
 class UploadCoverRequest(BaseModel):
     upload_url: str
     title: str = "My Song"
@@ -111,35 +69,16 @@ class UploadCoverRequest(BaseModel):
     persona_model: str | None = None
 
 
-# class TimingMixRequest(BaseModel):
-#     vocal_url: str
-#     instrumental_url: str
-#
-#     instrumental_delay_seconds: float = Field(
-#         default=0.0,
-#         ge=0.0,
-#         le=15.0,
-#         description=(
-#             "Delay the instrumental in seconds. "
-#             "The original vocal is never shifted."
-#         ),
-#     )
-#
-#     preview_duration_seconds: float = Field(
-#         default=30.0,
-#         ge=5.0,
-#         le=180.0,
-#         description=(
-#             "Length of the diagnostic mix in seconds."
-#         ),
-#     )
-
-
 class AnalyzeSongRequest(BaseModel):
     upload_url: str = Field(
         ...,
-        description="Public HTTPS URL of an MP3 or WAV recording"
+        description="Public HTTPS URL of an MP3 or WAV recording",
     )
+
+
+class AutoSongRequest(BaseModel):
+    upload_url: str
+    title: str | None = None
 
 
 # =====================================
@@ -184,32 +123,6 @@ async def create_instrumental(
 
 
 # =====================================
-# COVER (DISABLED)
-# =====================================
-
-# @app.post("/cover")
-# async def create_cover(
-#     request: CoverRequest
-# ):
-#     try:
-#         result = await generate_upload_cover(
-#             upload_url=request.upload_url,
-#             title=request.title,
-#         )
-#
-#         return {
-#             "success": True,
-#             "data": result,
-#         }
-#
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=500,
-#             detail=str(e),
-#         )
-
-
-# =====================================
 # SONG STATUS
 # =====================================
 
@@ -233,112 +146,6 @@ async def song_status(task_id: str):
 
 
 # =====================================
-# ALIGNMENT ANALYSIS (DISABLED)
-# =====================================
-
-# @app.post("/analyze-alignment")
-# async def alignment_analysis(
-#     request: AlignmentRequest
-# ):
-#     try:
-#         result = await analyze_alignment(
-#             vocal_url=request.vocal_url,
-#             instrumental_url=request.instrumental_url,
-#         )
-#
-#         return {
-#             "success": True,
-#             "data": result,
-#         }
-#
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=500,
-#             detail=str(e),
-#         )
-
-
-# =====================================
-# TIMING MIX (DISABLED)
-# =====================================
-
-# @app.post("/test-timing-mix")
-# async def test_timing_mix(
-#     request: TimingMixRequest
-# ):
-#     try:
-#         result = await create_timing_test_mix(
-#             vocal_url=request.vocal_url,
-#             instrumental_url=request.instrumental_url,
-#             instrumental_delay_seconds=(
-#                 request.instrumental_delay_seconds
-#             ),
-#             preview_duration_seconds=(
-#                 request.preview_duration_seconds
-#             ),
-#         )
-#
-#         return FileResponse(
-#             path=result["file_path"],
-#             media_type="audio/wav",
-#             filename="timing_test_mix.wav",
-#             background=BackgroundTask(
-#                 os.unlink,
-#                 result["file_path"],
-#             ),
-#         )
-#
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=500,
-#             detail=str(e),
-#         )
-
-
-# =====================================
-# MASHUP (DISABLED)
-# =====================================
-
-# @app.post("/mashup")
-# async def create_mashup(
-#     request: MashupRequest
-# ):
-#     try:
-#         return await generate_mashup(
-#             vocal_url=request.vocal_url,
-#             instrumental_url=request.instrumental_url,
-#             title=request.title,
-#             lyrics=request.lyrics,
-#         )
-#
-#     except (ValueError, RuntimeError) as e:
-#         raise HTTPException(
-#             status_code=400,
-#             detail=str(e),
-#         )
-#
-#     except httpx.HTTPStatusError as e:
-#         raise HTTPException(
-#             status_code=502,
-#             detail=e.response.text,
-#         )
-
-
-# @app.get("/mashup-details/{task_id}")
-# async def mashup_details(task_id: str):
-#     try:
-#         return await get_mashup_details(
-#             task_id
-#         )
-#
-#     except httpx.HTTPStatusError as e:
-#         raise HTTPException(
-#             status_code=502,
-#             detail=e.response.text,
-#         )
-
-
-# =====================================
 # UPLOAD COVER
 # =====================================
 
@@ -358,6 +165,12 @@ async def upload_cover_endpoint(
         return result
 
     except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=e.response.text,
+        )
+
+    except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=str(e),
@@ -410,7 +223,6 @@ async def analyze_song_endpoint(
             detail=str(e),
         )
 
-    
     except httpx.HTTPStatusError as e:
         error_body = e.response.text
 
@@ -436,3 +248,87 @@ async def analyze_song_endpoint(
             status_code=500,
             detail=str(e),
         )
+
+
+# =====================================
+# AUTOMATIC SONG CREATION
+# GPT ANALYSIS -> SUNO
+# =====================================
+
+@app.post("/create-song-auto")
+async def create_song_auto(
+    request: AutoSongRequest
+):
+    try:
+        analysis = await analyze_song(
+            upload_url=request.upload_url
+        )
+
+        lyrics = analysis["lyrics"]
+
+        title = (
+            request.title
+            or analysis.get("title")
+            or "My Song"
+        )
+
+        tags = (
+            analysis.get("tags")
+            or DEFAULT_TAGS
+        )
+
+        negative_tags = (
+            analysis.get("negative_tags")
+            or DEFAULT_NEGATIVE_TAGS
+        )
+
+        result = await add_instrumental(
+            upload_url=request.upload_url,
+            title=title,
+            lyrics=lyrics,
+            tags=tags,
+            negative_tags=negative_tags,
+        )
+
+        return {
+            "success": True,
+            "analysis": analysis,
+            "generation": result,
+        }
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                f"External API error: "
+                f"{e.response.status_code}"
+            ),
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
+
+
+# =====================================
+# DISABLED FEATURES
+# =====================================
+
+# The following features remain disabled:
+#
+# /cover
+# /analyze-alignment
+# /test-timing-mix
+# /mashup
+# /mashup-details
+#
+# Related service modules have not been deleted.
+# They can be enabled again when needed.
