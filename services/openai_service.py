@@ -5,6 +5,7 @@ import base64
 import asyncio
 import tempfile
 import logging
+
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -21,6 +22,10 @@ OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 MAX_AUDIO_BYTES = 20 * 1024 * 1024
 MAX_ATTEMPTS = 2
 
+
+# =====================================
+# GPT SYSTEM PROMPT
+# =====================================
 
 SYSTEM_PROMPT = """
 You are an expert music transcription specialist for
@@ -133,6 +138,10 @@ invent a complete transcription.
 """
 
 
+# =====================================
+# AUDIO CONVERSION
+# =====================================
+
 async def convert_audio_to_wav(audio_bytes: bytes) -> bytes:
     """Convert browser audio formats to 24 kHz mono WAV."""
 
@@ -180,6 +189,7 @@ async def convert_audio_to_wav(audio_bytes: bytes) -> bytes:
                 "utf-8",
                 errors="replace",
             )[:500]
+
             raise ValueError(
                 f"Audio conversion failed: {details}"
             )
@@ -193,6 +203,10 @@ async def convert_audio_to_wav(audio_bytes: bytes) -> bytes:
 
         return wav_bytes
 
+
+# =====================================
+# GPT RESPONSE VALIDATION
+# =====================================
 
 def parse_song_response(result: dict) -> dict:
     """Parse and validate the four required GPT fields."""
@@ -261,9 +275,7 @@ def parse_song_response(result: dict) -> dict:
     if not song["title"].strip():
         song["title"] = "My Melody"
 
-    # IMPORTANT:
     # Empty lyrics are valid for pure humming.
-    # Do not reject them.
 
     if len(song["lyrics"]) > 5000:
         raise ValueError(
@@ -285,6 +297,10 @@ def parse_song_response(result: dict) -> dict:
         for field in required_fields
     }
 
+
+# =====================================
+# GPT AUDIO ANALYSIS
+# =====================================
 
 async def analyze_song(upload_url: str) -> dict:
 
@@ -390,6 +406,12 @@ async def analyze_song(upload_url: str) -> dict:
                 api_response.raise_for_status()
 
                 result = api_response.json()
+
+                logger.info(
+                    "OpenAI model: %s; usage: %s",
+                    result.get("model"),
+                    result.get("usage", {}),
+                )
 
                 return parse_song_response(result)
 
