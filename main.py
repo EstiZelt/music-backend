@@ -14,6 +14,8 @@ from services.suno_service import (
 from services.suno_cover_service import (
     generate_upload_cover,
     get_cover_generation_details,
+    DEFAULT_COVER_STYLE,
+    DEFAULT_COVER_NEGATIVE_TAGS,
 )
 
 from services.openai_service import analyze_song
@@ -64,6 +66,18 @@ class UploadCoverRequest(BaseModel):
     upload_url: str
     title: str = "My Song"
     lyrics: str = ""
+
+    tags: str = Field(
+        default=DEFAULT_COVER_STYLE,
+        max_length=1000,
+        description="Positive style prompt for Suno Cover",
+    )
+
+    negative_tags: str = Field(
+        default=DEFAULT_COVER_NEGATIVE_TAGS,
+        max_length=500,
+        description="Elements Suno Cover should avoid",
+    )
 
     persona_id: str | None = None
     persona_model: str | None = None
@@ -157,12 +171,22 @@ async def upload_cover_endpoint(
         result = await generate_upload_cover(
             upload_url=request.upload_url,
             title=request.title,
+            style=request.tags,
+            negative_tags=request.negative_tags,
             lyrics=request.lyrics,
             persona_id=request.persona_id,
-            persona_model=request.persona_model,
+            persona_model=(
+                request.persona_model or "voice_persona"
+            ),
         )
 
         return result
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
 
     except httpx.HTTPStatusError as e:
         raise HTTPException(
@@ -175,7 +199,6 @@ async def upload_cover_endpoint(
             status_code=500,
             detail=str(e),
         )
-
 
 # =====================================
 # COVER GENERATION DETAILS
